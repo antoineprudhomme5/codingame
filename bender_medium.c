@@ -13,8 +13,6 @@ char    row[102];   // utilise pour lire une ligne de la grille
 
 int     X;          // coordonnees de BENDER sur L
 int     Y;          // coordonnees de BENDER sur C
-int     last_x = -1;// remember the last x coordinate of bender
-int     last_y = -1;// remember the last y coordinate of bender
 int     tp1[2];     // coordonnees du TP1
 int     tp2[2];     // coordonnees du TP2
 
@@ -22,7 +20,7 @@ char    directions[4];      // direction que prend Bender
 int     bool_suicide = 0;   // il n'a pas encore trouve le $
 int     bool_beer = 0;      // if true, bender can broke 'X'
 
-char    reponse = 'S';      // default priority
+char    reponse = 'S';
 
 // MAIN
 
@@ -117,7 +115,7 @@ void normal_move(char map[L][C])
         }
 
         // test if the temp coordinates are ok
-        if(map[temp_x][temp_y] != '#' && check_last_position(temp_x, temp_y))
+        if(map[temp_x][temp_y] != '#')
         {
             if(map[temp_x][temp_y] != 'X')
             {
@@ -139,24 +137,26 @@ void normal_move(char map[L][C])
 }
 
 /**
- * check if next direction is not the same as before (=> loop)
- */
-int check_last_position(int tx, int ty)
-{
-    if(last_x == tx && last_y == ty)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-/**
  * calculate the move priorities
  */
 void priorities()
 {
-    strcpy(directions, "SENO");
+    // last direction , then SENO
+    switch(reponse)
+    {
+        case 'N' :
+            strcpy(directions, "NSEO");
+            break;
+        case 'E' :
+            strcpy(directions, "ESNO");
+            break;
+        case 'S' :
+            strcpy(directions, "SENO");
+            break;
+        case 'O' :
+            strcpy(directions, "OSEN");
+            break;
+    }
 }
 
 /**
@@ -164,8 +164,6 @@ void priorities()
  */
 void mise_a_jour_blender(char map[L][C], char direction)
 {
-    last_x = X;
-    last_y = Y;
     reponse = direction;
     switch(direction)
     {
