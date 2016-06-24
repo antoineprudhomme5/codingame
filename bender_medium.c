@@ -9,15 +9,16 @@
 
 int     L;          // nombre de ligne
 int     C;          // nombre de colonne
-char    row[102];   // utilis� pour lire une ligne de la grille
+char    row[102];   // utilise pour lire une ligne de la grille
 
-int     X;          // coordonn�es de BENDER sur L
-int     Y;          // coordonn�es de BENDER sur C
-int     tp1[2];     // coordonn�es du TP1
-int     tp2[2];     // coordonn�es du TP2
+int     X;          // coordonnees de BENDER sur L
+int     Y;          // coordonnees de BENDER sur C
+int     tp1[2];     // coordonnees du TP1
+int     tp2[2];     // coordonnees du TP2
 
 char    directions[4];      // direction que prend Bender
 int     bool_suicide = 0;   // il n'a pas encore trouve le $
+int     bool_beer = 0;      // if true, bender can broke 'X'
 
 char    reponse;
 
@@ -74,6 +75,10 @@ void prochaine_direction(char map[L][C])
         case '$' : // end
             bool_suicide = 1;
             break;
+        case 'B' : // beer
+            bool_beer = !bool_beer;
+            deplacement_normal(map);
+            break;
         default : // if empty
             deplacement_normal(map);
             break;
@@ -112,8 +117,19 @@ void deplacement_normal(char map[L][C])
         // test if the temp coordinates are ok
         if(map[temp_x][temp_y] != '#')
         {
-            trouve = 1;
-            mise_a_jour_blender(map, directions[i]);
+            if(map[temp_x][temp_y] != 'X')
+            {
+                trouve = 1;
+                mise_a_jour_blender(map, directions[i]);
+            }
+            else
+            {
+                if(bool_beer)
+                {
+                    trouve = 1;
+                    mise_a_jour_blender(map, directions[i]);
+                }
+            }
         }
 
         i++;
