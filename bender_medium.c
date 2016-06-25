@@ -19,7 +19,8 @@ int     tp2[2];     // coordonnees du TP2
 char    directions[4];      // direction que prend Bender
 int     bool_suicide = 0;   // il n'a pas encore trouve le $
 int     bool_beer = 0;      // if true, bender can broke 'X'
-int     bool_inverse = 0;   // inverseur desactive
+int     bool_inverse = 0;   // change when bender is on I
+int     bool_tp = 0;        // change when bender has just been tp
 
 char    reponse = 'S';
 
@@ -42,7 +43,7 @@ int main()
     {
         //affiche_coordonnees_blender();
         prochaine_direction(map);
-        if(!bool_suicide) // sinon il fait un deplacement en trop
+        if(!bool_suicide && !bool_tp) // sinon il fait un deplacement en trop
         {
             switch(reponse)
             {
@@ -89,6 +90,14 @@ void prochaine_direction(char map[L][C])
             bool_inverse = !bool_inverse;
             normal_move(map);
             break;
+        case 'T' :
+            if(!bool_tp)
+            {
+                teleportation();
+            } else {
+                normal_move(map);
+            }
+            break;
         default : // if empty
             normal_move(map);
             break;
@@ -101,6 +110,11 @@ void prochaine_direction(char map[L][C])
 void normal_move(char map[L][C])
 {
     priorities();
+
+    if(bool_tp)
+    {
+        bool_tp = 0;
+    }
 
     int i = 0, trouve = 0;
 
@@ -145,6 +159,25 @@ void normal_move(char map[L][C])
 
         i++;
     }
+}
+
+/**
+ * do the teleportation
+ */
+void teleportation()
+{
+     if(tp1[0] == X && tp1[1] == Y)
+     {
+         X = tp2[0];
+         Y = tp2[1];
+     }
+     else
+     {
+         X = tp1[0];
+         Y = tp1[1];
+     }
+
+     bool_tp = 1;
 }
 
 /**
