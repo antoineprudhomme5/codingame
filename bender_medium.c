@@ -19,6 +19,7 @@ int     tp2[2];     // coordonnees du TP2
 char    directions[4];      // direction que prend Bender
 int     bool_suicide = 0;   // il n'a pas encore trouve le $
 int     bool_beer = 0;      // if true, bender can broke 'X'
+int     bool_inverse = 0;   // inverseur desactive
 
 char    reponse = 'S';
 
@@ -84,6 +85,10 @@ void prochaine_direction(char map[L][C])
         case 'O' :
             mise_a_jour_blender(map, map[X][Y]);
             break;
+        case 'I' :
+            bool_inverse = !bool_inverse;
+            normal_move(map);
+            break;
         default : // if empty
             normal_move(map);
             break;
@@ -147,21 +152,43 @@ void normal_move(char map[L][C])
  */
 void priorities()
 {
-    // last direction , then SENO
-    switch(reponse)
+    if(!bool_inverse)
     {
-        case 'N' :
-            strcpy(directions, "NSEW");
-            break;
-        case 'E' :
-            strcpy(directions, "ESNW");
-            break;
-        case 'S' :
-            strcpy(directions, "SENW");
-            break;
-        case 'W' :
-            strcpy(directions, "WSEN");
-            break;
+        // last direction , then SENWw
+        switch(reponse)
+        {
+            case 'N' :
+                strcpy(directions, "NSEW");
+                break;
+            case 'E' :
+                strcpy(directions, "ESNW");
+                break;
+            case 'S' :
+                strcpy(directions, "SENW");
+                break;
+            case 'W' :
+                strcpy(directions, "WSEN");
+                break;
+        }
+    }
+    else
+    {
+        // last direction , then WNES
+        switch(reponse)
+        {
+            case 'N' :
+                strcpy(directions, "NWES");
+                break;
+            case 'E' :
+                strcpy(directions, "EWNS");
+                break;
+            case 'S' :
+                strcpy(directions, "SWNE");
+                break;
+            case 'W' :
+                strcpy(directions, "WNES");
+                break;
+        }
     }
 }
 
