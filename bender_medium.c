@@ -54,7 +54,7 @@ int main()
                 case 'S' :
                     printf("SOUTH\n");
                     break;
-                case 'O' :
+                case 'W' :
                     printf("WEST\n");
             }
         }
@@ -77,6 +77,12 @@ void prochaine_direction(char map[L][C])
         case 'B' : // beer
             bool_beer = !bool_beer;
             normal_move(map);
+            break;
+        case 'N' :
+        case 'S' :
+        case 'W' :
+        case 'O' :
+            mise_a_jour_blender(map, map[X][Y]);
             break;
         default : // if empty
             normal_move(map);
@@ -109,7 +115,7 @@ void normal_move(char map[L][C])
             case 'S' :
                 temp_x++;
                 break;
-            case 'O' :
+            case 'W' :
                 temp_y--;
                 break;
         }
@@ -145,16 +151,16 @@ void priorities()
     switch(reponse)
     {
         case 'N' :
-            strcpy(directions, "NSEO");
+            strcpy(directions, "NSEW");
             break;
         case 'E' :
-            strcpy(directions, "ESNO");
+            strcpy(directions, "ESNW");
             break;
         case 'S' :
-            strcpy(directions, "SENO");
+            strcpy(directions, "SENW");
             break;
-        case 'O' :
-            strcpy(directions, "OSEN");
+        case 'W' :
+            strcpy(directions, "WSEN");
             break;
     }
 }
@@ -176,7 +182,7 @@ void mise_a_jour_blender(char map[L][C], char direction)
         case 'S' :
             X++;
             break;
-        case 'O' :
+        case 'W' :
             Y--;
             break;
     }
