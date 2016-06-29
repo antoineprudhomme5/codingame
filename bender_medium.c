@@ -24,6 +24,9 @@ int     bool_tp = 0;        // change when bender has just been tp
 
 char    reponse = 'S';
 
+char    deplacements[200];          // memorise tous les déplacements que bender a effecuté dans la partie
+int     tour = 0;                   // incremente à chaque tour de jeu (pour les deux tableaux au dessus)
+
 // MAIN
 
 int main()
@@ -41,31 +44,58 @@ int main()
 
     while(!bool_suicide)
     {
-        //affiche_coordonnees_blender();
         prochaine_direction(map);
+
         if(!bool_suicide && !bool_tp) // sinon il fait un deplacement en trop
         {
-            switch(reponse)
-            {
-                case 'N' :
-                    printf("NORTH\n");
-                    break;
-                case 'E' :
-                    printf("EAST\n");
-                    break;
-                case 'S' :
-                    printf("SOUTH\n");
-                    break;
-                case 'W' :
-                    printf("WEST\n");
-            }
+            deplacement[tour] = reponse;
         }
+
+        if(tour == 198)
+        {
+            bool_suicide = 1;
+        }
+
+        tour++;
+    }
+
+    if(tour != 199)
+    {
+        afficher_deplacements();
+    }
+    else
+    {
+        printf("LOOP\n");
     }
 
     return 0;
 }
 
 // FUNCTIONS
+
+/**
+ * affiche les deplacements que bender a effectué
+ */
+void afficher_deplacements()
+{
+    for(int i = 0; i < tour; i++)
+    {
+        switch(deplacements[i])
+        {
+            case 'N' :
+                printf("NORTH\n");
+                break;
+            case 'E' :
+                printf("EAST\n");
+                break;
+            case 'S' :
+                printf("SOUTH\n");
+                break;
+            case 'W' :
+                printf("WEST\n");
+        }
+    }
+}
 
 /**
  * calcule le deplacement de bender en fonction de sa position actuelle
