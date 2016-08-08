@@ -18,28 +18,41 @@ class Solution {
             nodes.createLink(xi, yi);
         }
 
-        System.err.println(nodes);
+        // System.err.println(nodes);
 
-        System.out.println("1");
+        System.out.println(minPropagation(nodes));
     }
+
+    private static int minPropagation(Nodes nodes) {
+        int minSteps = 1;
+        while(nodes.hasLeaves()) {                                      // while there are leaves to cut
+            for(int i = 0; i < nodes.references.length; i++) {          // go throught the Nodes
+                if(nodes.references[i] != null) {                       // if the node has not been already cut
+                    if(nodes.references[i].linkedNodes.size() == 1) {   // 1 link = a leave, so cut it
+                        System.err.println("cut : " + nodes.references[i].value);
+                        nodes.cutLeave(i);
+                    }
+                }
+            }
+            minSteps++;
+        }
+        return minSteps;
+    }
+
 }
 
 // represent a node in the tree
 class Node {
 
     public int value;                   // node number
-    public boolean visited;             // true if this node has been cut
-    public ArrayList<Node> parents;     // parents nodes
-    public ArrayList<Node> children;    // children nodes
+    public ArrayList<Node> linkedNodes;  // nodes linked to this node
 
     /**
      * Constructor with the node number
      */
     public Node(int value) {
         this.value = value;
-        this.visited = false;
-        this.parents = new ArrayList<Node>();
-        this.children = new ArrayList<Node>();
+        this.linkedNodes = new ArrayList<Node>();
     }
 
     /**
@@ -48,13 +61,9 @@ class Node {
     public String toString() {
         String str = new String("--------------------------------\n");
         str += "Value : " + this.value + "\n";
-        str += "Parents : ";
-        for(int i = 0; i < this.parents.size(); i++) {
-            str += this.parents.get(i).value + " ";
-        }
-        str += "\nChildren : ";
-        for(int i = 0; i < this.children.size(); i++) {
-            str += this.children.get(i).value + " ";
+        str += "Links : ";
+        for(int i = 0; i < this.linkedNodes.size(); i++) {
+            str += this.linkedNodes.get(i).value + " ";
         }
         str += "\n";
         return str;
@@ -77,6 +86,38 @@ class Nodes {
     }
 
     /**
+     * return true if the number of node is > 1
+     */
+    public boolean hasLeaves() {
+        int countNodes = 0;
+        for(int i = 0; i < this.references.length; i++) {
+            if(this.references[i] != null) {
+                countNodes++;
+            }
+        }
+        return countNodes > 1 ? true : false;
+    }
+
+    /**
+     * cut a node from the tree
+     */
+    public void cutLeave(int index) {
+        // first, remove it from the linkedNodes of the node connected with it
+        Node connected = this.references[index].linkedNodes.get(0);
+        //System.err.println(connected.linkedNodes.get(0));
+        for(int i = 0; i < connected.linkedNodes.size(); i++) {
+            if(connected.linkedNodes.get(i) != null && this.references[i] != null) {
+                if(connected.linkedNodes.get(i).value == this.references[i].value) {
+                    connected.linkedNodes.remove(i);
+                    break;
+                }
+            }
+        }
+        // then, remove it from the references
+        this.references[index] = null;
+    }
+
+    /**
      * Search the Node with the value or create a new Node if does'nt exists. Return the Node.
      */
     public Node getReference(int value) {
@@ -93,22 +134,22 @@ class Nodes {
     }
 
     /**
+     * get the references of the 2 Node and make the link
+     */
+    public void createLink(int parentValue, int childValue) {
+        Node parent = this.getReference(parentValue);
+        Node child = this.getReference(childValue);
+        parent.linkedNodes.add(child);
+        child.linkedNodes.add(parent);
+    }
+
+    /**
      * create a new Node in references[] and return the Node
      */
     public Node newNode(int value, int index) {
         Node newNode = new Node(value);
         this.references[index] = newNode;
         return this.references[index];
-    }
-
-    /**
-     * get the references of the 2 Node and make the link
-     */
-    public void createLink(int parentValue, int childValue) {
-        Node parent = this.getReference(parentValue);
-        Node child = this.getReference(childValue);
-        parent.children.add(child);
-        child.parents.add(parent);
     }
 
     /**
