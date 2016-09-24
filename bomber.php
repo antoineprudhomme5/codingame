@@ -49,7 +49,7 @@ while (true)
         );
 
         // save this entity
-        if ($entity['entityType'] == 0) {
+        if ($entity['entityType'] == 1) {
             array_push($bombs, $entity);
             $grid[$entity['y']][$entity['x']] == 'b';   // draw the bomb on the grid
         } else {
@@ -61,8 +61,10 @@ while (true)
         }
     }
 
-    $targets = findWhereToPlant($height, $width, $me);       // find all the places where I can plant a bomb
-    $target = findBestTarget($targets, $me);                 // find the best target for me
+    error_log(var_export($me, true));
+
+    $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
+    $target = findBestTarget($targets, $me);                    // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
     // else, go to the target
@@ -115,7 +117,7 @@ function findBestTarget($targets, $me)
  * Then sort this array by number of boxes i can brake.
  * @return Array
  */
-function findWhereToPlant($height, $width, $me)
+function findWhereToPlant($height, $width, $me, $grid)
 {
     $targets = [];
     for ($y = 0; $y < $height; $y++) {
@@ -149,7 +151,6 @@ function findWhereToPlant($height, $width, $me)
                     break;
                 }
             }
-            error_log(var_export($countBoxes, true));
             // if there are boxes, write it in the $targets array
             if ($countBoxes) {
                 array_push($targets, array(
