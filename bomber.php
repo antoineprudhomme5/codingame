@@ -8,6 +8,10 @@ fscanf(STDIN, "%d %d %d",
     $myId
 );
 
+// store the position where I dropped the bomb
+$bomb_x = 0;
+$bomb_y = 0;
+
 // Game loop
 while (true)
 {
@@ -61,15 +65,25 @@ while (true)
         }
     }
 
+    error_log(var_export($grid, true));
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
     // else, go to the target
-    if ($targets[$target]['x'] == $me['x'] && $targets[$target]['y'] == $me['y']) {
+    if ($targets[$target]['x'] == $me['x'] && $targets[$target]['y'] == $me['y'] && $me['param1']) {
         echo("BOMB ".$me['x']." ".$me['y']."\n");
+        $bomb_x = $me['x'];
+        $bomb_y = $me['y'];
     } else {
-        echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
+        // this is ugly but i can make some points with that
+        // if I don't do it, it print 'MOVE ' cause $targets is empty and I dont know why..
+        // with this solution, I stay on the bomb until it explode :'(
+        if (!$target) {
+            echo("MOVE ".$bomb_x." ".$bomb_y."\n");
+        } else {
+            echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
+        }
     }
 
 }
@@ -124,28 +138,32 @@ function findWhereToPlant($height, $width, $me, $grid)
             if ($grid[$y][$x] == '.') {
                 $countBoxes = 0;
                 // look at the top
-                for ($ty = $y-1; ($ty >= ($y-$me['param1']) && $ty >= 0); $ty--) {
+                for ($ty = $y; ($ty >= ($y-$me['param1']) && $ty >= 0); $ty--) {
+                    // error_log(var_export($grid[$ty][$x], true));
                     if ($grid[$ty][$x] == '0') {
                         $countBoxes++;
                         break;
                     }
                 }
                 // look at the bottom
-                for ($ty = $y+1; ($ty <= ($y+$me['param1']) && $ty < $height); $ty++) {
+                for ($ty = $y; ($ty <= ($y+$me['param1']) && $ty < $height); $ty++) {
+                    // error_log(var_export($grid[$ty][$x], true));
                     if ($grid[$ty][$x] == '0') {
                         $countBoxes++;
                         break;
                     }
                 }
                 // look at the left
-                for ($tx = $x-1; ($tx >= ($x-$me['param1']) && $tx >= 0); $tx--) {
+                for ($tx = $x; ($tx >= ($x-$me['param1']) && $tx >= 0); $tx--) {
+                    // error_log(var_export($grid[$y][$tx], true));
                     if ($grid[$y][$tx] == '0') {
                         $countBoxes++;
                         break;
                     }
                 }
                 // look at the right
-                for ($tx = $x+1; ($tx <= ($x+$me['param1']) && $tx < $width); $tx++) {
+                for ($tx = $x; ($tx <= ($x+$me['param1']) && $tx < $width); $tx++) {
+                    // error_log(var_export($grid[$y][$tx], true));
                     if ($grid[$y][$tx] == '0') {
                         $countBoxes++;
                         break;
@@ -153,7 +171,6 @@ function findWhereToPlant($height, $width, $me, $grid)
                 }
                 // if there are boxes, write it in the $targets array
                 if ($countBoxes) {
-                    error_log(var_export("ok", true));
                     array_push($targets, array(
                         'x' => $x,
                         'y' => $y,
