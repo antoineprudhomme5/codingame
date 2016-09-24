@@ -62,7 +62,6 @@ while (true)
     }
 
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
-    error_log(var_export("ok", true));
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
@@ -121,42 +120,46 @@ function findWhereToPlant($height, $width, $me, $grid)
     $targets = [];
     for ($y = 0; $y < $height; $y++) {
         for ($x = 0; $x < $width; $x++) {
-            $countBoxes = 0;
-            // look at the top
-            for ($ty = $y; ($ty > ($y-$me['param1']) && $ty >= 0); $ty--) {
-                if ($grid[$ty][$x] == '0') {
-                    $countBoxes++;
-                    break;
+            // I can't go where the is a box, so test if this is floor
+            if ($grid[$y][$x] == '.') {
+                $countBoxes = 0;
+                // look at the top
+                for ($ty = $y-1; ($ty >= ($y-$me['param1']) && $ty >= 0); $ty--) {
+                    if ($grid[$ty][$x] == '0') {
+                        $countBoxes++;
+                        break;
+                    }
                 }
-            }
-            // look at the bottom
-            for ($ty = $y; ($ty < ($y+$me['param1']) && $ty < $height); $ty++) {
-                if ($grid[$ty][$x] == '0') {
-                    $countBoxes++;
-                    break;
+                // look at the bottom
+                for ($ty = $y+1; ($ty <= ($y+$me['param1']) && $ty < $height); $ty++) {
+                    if ($grid[$ty][$x] == '0') {
+                        $countBoxes++;
+                        break;
+                    }
                 }
-            }
-            // look at the left
-            for ($tx = $x; ($tx > ($x-$me['param1']) && $tx >= 0); $tx--) {
-                if ($grid[$y][$tx] == '0') {
-                    $countBoxes++;
-                    break;
+                // look at the left
+                for ($tx = $x-1; ($tx >= ($x-$me['param1']) && $tx >= 0); $tx--) {
+                    if ($grid[$y][$tx] == '0') {
+                        $countBoxes++;
+                        break;
+                    }
                 }
-            }
-            // look at the right
-            for ($tx = $x; ($tx < ($x+$me['param1']) && $tx < $width); $tx++) {
-                if ($grid[$y][$tx] == '0') {
-                    $countBoxes++;
-                    break;
+                // look at the right
+                for ($tx = $x+1; ($tx <= ($x+$me['param1']) && $tx < $width); $tx++) {
+                    if ($grid[$y][$tx] == '0') {
+                        $countBoxes++;
+                        break;
+                    }
                 }
-            }
-            // if there are boxes, write it in the $targets array
-            if ($countBoxes) {
-                array_push($targets, array(
-                    'x' => $x,
-                    'y' => $y,
-                    'boxes' => $countBoxes
-                ));
+                // if there are boxes, write it in the $targets array
+                if ($countBoxes) {
+                    error_log(var_export("ok", true));
+                    array_push($targets, array(
+                        'x' => $x,
+                        'y' => $y,
+                        'boxes' => $countBoxes
+                    ));
+                }
             }
         }
     }
