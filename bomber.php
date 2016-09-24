@@ -61,9 +61,8 @@ while (true)
         }
     }
 
-    error_log(var_export($me, true));
-
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
+    error_log(var_export("ok", true));
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
@@ -125,28 +124,28 @@ function findWhereToPlant($height, $width, $me, $grid)
             $countBoxes = 0;
             // look at the top
             for ($ty = $y; ($ty > ($y-$me['param1']) && $ty >= 0); $ty--) {
-                if ($grid[$x][$ty] == '0') {
+                if ($grid[$ty][$x] == '0') {
                     $countBoxes++;
                     break;
                 }
             }
             // look at the bottom
             for ($ty = $y; ($ty < ($y+$me['param1']) && $ty < $height); $ty++) {
-                if ($grid[$x][$ty] == '0') {
+                if ($grid[$ty][$x] == '0') {
                     $countBoxes++;
                     break;
                 }
             }
             // look at the left
             for ($tx = $x; ($tx > ($x-$me['param1']) && $tx >= 0); $tx--) {
-                if ($grid[$tx][$y] == '0') {
+                if ($grid[$y][$tx] == '0') {
                     $countBoxes++;
                     break;
                 }
             }
             // look at the right
             for ($tx = $x; ($tx < ($x+$me['param1']) && $tx < $width); $tx++) {
-                if ($grid[$tx][$y] == '0') {
+                if ($grid[$y][$tx] == '0') {
                     $countBoxes++;
                     break;
                 }
@@ -172,7 +171,7 @@ function sortTargets($targets)
             if ($targets[$i-1]['boxes'] > $targets[$i]['boxes']) {
                 $temp = $targets[$i-1]['boxes'];
                 $targets[$i-1]['boxes'] = $targets[$i]['boxes'];
-                $targets[$i]['boxes'] = $temps;
+                $targets[$i]['boxes'] = $temp;
             }
         }
     }
