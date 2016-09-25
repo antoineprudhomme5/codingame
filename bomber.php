@@ -63,38 +63,42 @@ while (true)
 
     // update the grid => remove all the boxes that are in the range of a bomb
     $grid = cleanWillExplode($grid, $bombs, $height, $width);
-    error_log(var_export($grid, true));
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb (sorted by score)
-    $closests = sortByDistance($targets, $me['x'], $me['y']);   // targets sorted by distance from me
-    $target = findBestTarget($targets, $me);                    // find the best target for me
+    $targets = calculateDistances($targets, $me['x'], $me['y']);
+    $closests = sortByDistance($targets);                       // targets sorted by distance from me
+    $target = findBestTarget($targets, $closests,  $me);        // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
     // else, go to the target
-    if ($targets[$target]['x'] == $me['x'] && $targets[$target]['y'] == $me['y'] && $me['param1']) {
+    if ($target['x'] == $me['x'] && $target['y'] == $me['y'] && $me['param1']) {
         echo("BOMB ".$me['x']." ".$me['y']."\n");
     } else {
-        echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
+        echo("MOVE ".$target['x']." ".$target['y']."\n");
     }
 
 }
 
+function calculateDistances($targets, $mx, $my)
+{
+    for ($i = 0; $i < sizeof($targets); $i++) {
+        $dx = ($mx > $targets[$i]['x']) ? $mx - $targets[$i]['x'] : $targets[$i]['x'] - $mx;
+        $dy = ($my > $targets[$i]['y']) ? $my - $targets[$i]['y'] : $targets[$i]['y'] - $my;
+        $targets[$i]['distance'] = $dx + $dy;
+    }
+    return $targets;
+}
+
+
 /**
  * Return the targets sorted by distance
  * @param $targets : the targets
- * @param $mx : my x coodinate
- * @param $my : my y coordinate
  * @return $targets
  */
-function sortByDistance($targets, $mx, $my)
+function sortByDistance($targets)
 {
     for ($i = 1; $i < sizeof($targets); $i++) {
         for ($j = 1; $j < (sizeof($targets) - $i); $j++) {
-            // for
-            $dx1 = ($mx > $targets[$j-1]['x']) ? $mx - $targets[$j-1]['x'] : $targets[$j-1]['x'] - $mx;
-            $dy1 = ($my > $targets[$j-1]['y']) ? $my - $targets[$j-1]['y'] : $targets[$j-1]['y'] - $my;
-            $dx2 = ($mx > $targets[$j]['x']) ? $mx - $targets[$j]['x'] : $targets[$j]['x'] - $mx;
-            $dy2 = ($my > $targets[$j]['y']) ? $my - $targets[$j]['y'] : $targets[$j]['y'] - $my;
-            if (($dx1 + $dy1) > ($dx2 + $dy2)) {
+            if ($targets[$j-1]['distance'] > $targets[$j]['distance']) {
                 $temp = $targets[$j-1];
                 $targets[$j-1] = $targets[$j];
                 $targets[$j] = $temp;
@@ -131,34 +135,28 @@ function cleanWillExplode($grid, $bombs, $height, $width)
  * If I can plant, then find a good place close to me
  * Else, go to the closest place where the score I get get with my bomb is max
  */
-function findBestTarget($targets, $me)
+function findBestTarget($targets, $closests, $me)
 {
-    $closest = 0;
-    $closestDx = ($me['x'] > $targets[0]['x']) ? $me['x'] - $targets[0]['x'] : $targets[0]['x'] - $me['x'];
-    $closestDy = ($me['y'] > $targets[0]['y']) ? $me['y'] - $targets[0]['y'] : $targets[0]['y'] - $me['y'];
-    // find the closest target from me
-    for ($i = 1; $i < sizeof($targets); $i++) {
-        // calculate the distance between me and this target
-        $dx = ($me['x'] > $targets[$i]['x']) ? $me['x'] - $targets[$i]['x'] : $targets[$i]['x'] - $me['x'];
-        $dy = ($me['y'] > $targets[$i]['y']) ? $me['y'] - $targets[$i]['y'] : $targets[$i]['y'] - $me['y'];
-        // check if this distance is closer than the current closest (to replace the old by the new if it is)
-        if (($closestDx + $closestDy) > ($dx + $dy)) {
-            $closest = $i;
-            $closestDx = $dx;
-            $closestDy = $dy;
-        }
-        // if distance is 0 (because im on this target), break : we found it
-        if (!$dx && !$dy) {
-            break;
-        }
-    }
     // if the closest target his top ranked, then this is where I have to plant my bomb
     // else, look at top ranked target to find the closest
-    if ($targets[$closest]['nbBoxes'] == $targets[0]['nbBoxes']) {
-        return $closest;
+    if ($closests[0]['nbBoxes'] == $targets[0]['nbBoxes']) {
+        return $closests[0];
     } else {
-        // return the same (testing if it works for the moment)
-        return $closest;
+        // if we can plant, plant
+        // else, look the best target before we can plant the next bomb
+        if ($me['param1']) {
+            return $closests[0];
+        } else {
+            $i = 0;
+            $max = 0;
+            while ($closests[$i]['distance'] <= $me['param1'] && $closests[$max]['nbBoxes'] < $targets[0]['nbBoxes'] && $i < sizeof($closests)) {
+                if ($closests[$i]['nbBoxes'] > $closests[$max]['nbBoxes']) {
+                    $max = $i;
+                }
+                $i++;
+            }
+            return $closests[$max];
+        }
     }
 }
 
