@@ -8,10 +8,6 @@ fscanf(STDIN, "%d %d %d",
     $myId
 );
 
-// store the position where I dropped the bomb
-$bomb_x = 0;
-$bomb_y = 0;
-
 // Game loop
 while (true)
 {
@@ -65,7 +61,9 @@ while (true)
         }
     }
 
-    error_log(var_export($grid, true));
+    // update the grid => remove all the boxes that are in the range of a bomb
+    $grid = cleanWillExplode($grid, $bombs, $height, $width);
+
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
@@ -73,19 +71,32 @@ while (true)
     // else, go to the target
     if ($targets[$target]['x'] == $me['x'] && $targets[$target]['y'] == $me['y'] && $me['param1']) {
         echo("BOMB ".$me['x']." ".$me['y']."\n");
-        $bomb_x = $me['x'];
-        $bomb_y = $me['y'];
     } else {
-        // this is ugly but i can make some points with that
-        // if I don't do it, it print 'MOVE ' cause $targets is empty and I dont know why..
-        // with this solution, I stay on the bomb until it explode :'(
-        if (!$target) {
-            echo("MOVE ".$bomb_x." ".$bomb_y."\n");
-        } else {
-            echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
-        }
+        echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
     }
 
+}
+
+/**
+ * Remove the $bombs in $grid
+ * @param $grid : the game grid
+ * @param $bombs : the bombs planted on the grid
+ * @param $height : the grid height
+ * @param $width : the grid width
+ * @return $grid : the grid updated
+ */
+function cleanWillExplode($grid, $bombs, $height, $width)
+{
+    for ($i = 0; $i < sizeof($bombs); $i++) {
+        // foreach bomb, get his targets
+        $bombTargets = targetedBoxes($bombs[$i]['x'], $bombs[$i]['y'], $bombs[$i]['param2'], $grid, $height, $width);
+        error_log(var_export($bombTargets, true));
+        // then , remove this targets to the grid
+        for ($j = 0; $j < sizeof($bombTargets); $j++) {
+            $grid[$bombTargets[$j]['y']][$bombTargets[$j]['x']] = '.';
+        }
+    }
+    return $grid;
 }
 
 /**
@@ -116,12 +127,74 @@ function findBestTarget($targets, $me)
     }
     // if the closest target his top ranked, then this is where I have to plant my bomb
     // else, look at top ranked target to find the closest
-    if ($targets[$closest]['boxes'] == $targets[0]['boxes']) {
+    if ($targets[$closest]['nbBoxes'] == $targets[0]['nbBoxes']) {
         return $closest;
     } else {
         // return the same (testing if it works for the moment)
         return $closest;
     }
+}
+
+/**
+ * Return the boxes which will explode by the bomb
+ * @param $x : bomb x coordinate
+ * @param $y : bomb y coodinate
+ * @param $range : the bomb range
+ * @param $grid : the game grid
+ * @param $height : the grid height (y axis)
+ * @param $width : the grid width (x axis)
+ * @return Array
+ */
+function targetedBoxes($x, $y, $range, $grid, $height, $width)
+{
+    $boxes = [];
+
+    // look at the top
+    for ($ty = $y; ($ty >= ($y-$range) && $ty >= 0); $ty--) {
+        // error_log(var_export($grid[$ty][$x], true));
+        if ($grid[$ty][$x] == '0') {
+            array_push($boxes, array(
+                'x' => $x,
+                'y' => $ty
+            ));
+            break;
+        }
+    }
+    // look at the bottom
+    for ($ty = $y; ($ty <= ($y+$range) && $ty < $height); $ty++) {
+        // error_log(var_export($grid[$ty][$x], true));
+        if ($grid[$ty][$x] == '0') {
+            array_push($boxes, array(
+                'x' => $x,
+                'y' => $ty
+            ));
+            break;
+        }
+    }
+    // look at the left
+    for ($tx = $x; ($tx >= ($x-$range) && $tx >= 0); $tx--) {
+        // error_log(var_export($grid[$y][$tx], true));
+        if ($grid[$y][$tx] == '0') {
+            array_push($boxes, array(
+                'x' => $tx,
+                'y' => $y
+            ));
+            break;
+        }
+    }
+    // look at the right
+    for ($tx = $x; ($tx <= ($x+$range) && $tx < $width); $tx++) {
+        // error_log(var_export($grid[$y][$tx], true));
+        if ($grid[$y][$tx] == '0') {
+            array_push($boxes, array(
+                'x' => $tx,
+                'y' => $y
+            ));
+            break;
+        }
+    }
+
+    return $boxes;
 }
 
 /**
@@ -136,45 +209,15 @@ function findWhereToPlant($height, $width, $me, $grid)
         for ($x = 0; $x < $width; $x++) {
             // I can't go where the is a box, so test if this is floor
             if ($grid[$y][$x] == '.') {
-                $countBoxes = 0;
-                // look at the top
-                for ($ty = $y; ($ty >= ($y-$me['param1']) && $ty >= 0); $ty--) {
-                    // error_log(var_export($grid[$ty][$x], true));
-                    if ($grid[$ty][$x] == '0') {
-                        $countBoxes++;
-                        break;
-                    }
-                }
-                // look at the bottom
-                for ($ty = $y; ($ty <= ($y+$me['param1']) && $ty < $height); $ty++) {
-                    // error_log(var_export($grid[$ty][$x], true));
-                    if ($grid[$ty][$x] == '0') {
-                        $countBoxes++;
-                        break;
-                    }
-                }
-                // look at the left
-                for ($tx = $x; ($tx >= ($x-$me['param1']) && $tx >= 0); $tx--) {
-                    // error_log(var_export($grid[$y][$tx], true));
-                    if ($grid[$y][$tx] == '0') {
-                        $countBoxes++;
-                        break;
-                    }
-                }
-                // look at the right
-                for ($tx = $x; ($tx <= ($x+$me['param1']) && $tx < $width); $tx++) {
-                    // error_log(var_export($grid[$y][$tx], true));
-                    if ($grid[$y][$tx] == '0') {
-                        $countBoxes++;
-                        break;
-                    }
-                }
+                // the boxes which will explode if the bomb is planted here
+                $boxes = targetedBoxes($x, $y, $me['param2'], $grid, $height, $width);
                 // if there are boxes, write it in the $targets array
-                if ($countBoxes) {
+                if (sizeof($boxes)) {
                     array_push($targets, array(
                         'x' => $x,
                         'y' => $y,
-                        'boxes' => $countBoxes
+                        'boxes' => $boxes,
+                        'nbBoxes' => sizeof($boxes)
                     ));
                 }
             }
@@ -188,10 +231,10 @@ function sortTargets($targets)
 {
     for ($i = 1; $i < sizeof($targets); $i++) {
         for ($j = 1; $j < (sizeof($targets) - $i); $j++) {
-            if ($targets[$i-1]['boxes'] > $targets[$i]['boxes']) {
-                $temp = $targets[$i-1]['boxes'];
-                $targets[$i-1]['boxes'] = $targets[$i]['boxes'];
-                $targets[$i]['boxes'] = $temp;
+            if ($targets[$i-1]['nbBoxes'] > $targets[$i]['nbBoxes']) {
+                $temp = $targets[$i-1]['nbBoxes'];
+                $targets[$i-1]['nbBoxes'] = $targets[$i]['nbBoxes'];
+                $targets[$i]['nbBoxes'] = $temp;
             }
         }
     }
