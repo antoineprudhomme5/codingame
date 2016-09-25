@@ -64,7 +64,8 @@ while (true)
     // update the grid => remove all the boxes that are in the range of a bomb
     $grid = cleanWillExplode($grid, $bombs, $height, $width);
     error_log(var_export($grid, true));
-    $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
+    $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb (sorted by score)
+    $closests = sortByDistance($targets, $me['x'], $me['y']);   // targets sorted by distance from me
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
     // if the target is where I am and i can plant a bomb, plant
@@ -75,6 +76,33 @@ while (true)
         echo("MOVE ".$targets[$target]['x']." ".$targets[$target]['y']."\n");
     }
 
+}
+
+/**
+ * Return the targets sorted by distance
+ * @param $targets : the targets
+ * @param $mx : my x coodinate
+ * @param $my : my y coordinate
+ * @return $targets
+ */
+function sortByDistance($targets, $mx, $my)
+{
+    for ($i = 1; $i < sizeof($targets); $i++) {
+        for ($j = 1; $j < (sizeof($targets) - $i); $j++) {
+            // for
+            $dx1 = ($mx > $targets[$j-1]['x']) ? $mx - $targets[$j-1]['x'] : $targets[$j-1]['x'] - $mx;
+            $dy1 = ($my > $targets[$j-1]['y']) ? $my - $targets[$j-1]['y'] : $targets[$j-1]['y'] - $my;
+            $dx2 = ($mx > $targets[$j]['x']) ? $mx - $targets[$j]['x'] : $targets[$j]['x'] - $mx;
+            $dy2 = ($my > $targets[$j]['y']) ? $my - $targets[$j]['y'] : $targets[$j]['y'] - $my;
+            if (($dx1 + $dy1) > ($dx2 + $dy2)) {
+                $temp = $targets[$j-1];
+                $targets[$j-1] = $targets[$j];
+                $targets[$j] = $temp;
+            }
+        }
+    }
+
+    return $targets;
 }
 
 /**
@@ -226,14 +254,19 @@ function findWhereToPlant($height, $width, $me, $grid)
     return sortTargets($targets);
 }
 
+/**
+ * Sort the targets by score
+ * @param $targets
+ * @return $targets
+ */
 function sortTargets($targets)
 {
     for ($i = 1; $i < sizeof($targets); $i++) {
         for ($j = 1; $j < (sizeof($targets) - $i); $j++) {
-            if ($targets[$i-1]['nbBoxes'] > $targets[$i]['nbBoxes']) {
-                $temp = $targets[$i-1]['nbBoxes'];
-                $targets[$i-1]['nbBoxes'] = $targets[$i]['nbBoxes'];
-                $targets[$i]['nbBoxes'] = $temp;
+            if ($targets[$j-1]['nbBoxes'] > $targets[$j]['nbBoxes']) {
+                $temp = $targets[$j-1]['nbBoxes'];
+                $targets[$j-1]['nbBoxes'] = $targets[$j]['nbBoxes'];
+                $targets[$j]['nbBoxes'] = $temp;
             }
         }
     }
