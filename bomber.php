@@ -63,7 +63,7 @@ while (true)
 
     // update the grid => remove all the boxes that are in the range of a bomb
     $grid = cleanWillExplode($grid, $bombs, $height, $width);
-
+    error_log(var_export($grid, true));
     $targets = findWhereToPlant($height, $width, $me, $grid);   // find all the places where I can plant a bomb
     $target = findBestTarget($targets, $me);                    // find the best target for me
 
@@ -90,7 +90,6 @@ function cleanWillExplode($grid, $bombs, $height, $width)
     for ($i = 0; $i < sizeof($bombs); $i++) {
         // foreach bomb, get his targets
         $bombTargets = targetedBoxes($bombs[$i]['x'], $bombs[$i]['y'], $bombs[$i]['param2'], $grid, $height, $width);
-        error_log(var_export($bombTargets, true));
         // then , remove this targets to the grid
         for ($j = 0; $j < sizeof($bombTargets); $j++) {
             $grid[$bombTargets[$j]['y']][$bombTargets[$j]['x']] = '.';
@@ -210,7 +209,7 @@ function findWhereToPlant($height, $width, $me, $grid)
             // I can't go where the is a box, so test if this is floor
             if ($grid[$y][$x] == '.') {
                 // the boxes which will explode if the bomb is planted here
-                $boxes = targetedBoxes($x, $y, $me['param2'], $grid, $height, $width);
+                $boxes = targetedBoxes($x, $y, $me['param2']-1, $grid, $height, $width);
                 // if there are boxes, write it in the $targets array
                 if (sizeof($boxes)) {
                     array_push($targets, array(
