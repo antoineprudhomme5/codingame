@@ -171,7 +171,7 @@ class Solution(object):
                             self.bender.direction = (self.bender.direction + 1) % 4
 
             # if cell has already been visited, with the same direction => LOOP
-            if self.ground.get_cell(self.bender.line, self.bender.column) == self.bender.direction:
+            if self.ground.get_cell(self.bender.line, self.bender.column)[1] == self.bender.direction:
                 print("LOOP")
                 return
             # else, set the cell to visited
