@@ -132,7 +132,7 @@ class Solution(object):
             return False
         elif value == 'X' and self.bender.drunk:
             # empty this cell
-            self.ground.set_cell(line, column, '')
+            self.ground.set_cell(line, column, value='x')
         return True
 
     def run(self):
