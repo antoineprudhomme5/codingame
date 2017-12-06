@@ -141,6 +141,9 @@ class Solution(object):
             # move to the next cell
             old_line = self.bender.line
             old_column = self.bender.column
+            # first, start with the current blender's direction. If if doesn't work,
+            # search for new direction
+            search_new_direction = False
             # continue while can't move in the current direction
             while self.bender.line == old_line and self.bender.column == old_column:
                 if self.DIRECTIONS[self.bender.direction] == 'SOUTH' \
@@ -156,11 +159,16 @@ class Solution(object):
                         and self.is_cell_reachable(self.bender.line, self.bender.column-1):
                     self.bender.column -= 1
                 else:
-                    # impossible to move -> change direction
-                    if self.inverse_direction:
-                        self.bender.direction = (self.bender.direction - 1) % 4
+                    # if it was the previous direction of Bender, reset direction
+                    if not search_new_direction:
+                        search_new_direction = True
+                        self.bender.direction = 3 if self.inverse_direction else 0
                     else:
-                        self.bender.direction = (self.bender.direction + 1) % 4
+                        # check another direction
+                        if self.inverse_direction:
+                            self.bender.direction = (self.bender.direction - 1) % 4
+                        else:
+                            self.bender.direction = (self.bender.direction + 1) % 4
 
             # if cell has already been visited, with the same direction => LOOP
             if self.ground.get_cell(self.bender.line, self.bender.column) == self.bender.direction:
@@ -168,6 +176,9 @@ class Solution(object):
                 return
             # else, set the cell to visited
             self.ground.set_cell(self.bender.line, self.bender.column, visited=self.bender.direction)
+
+            # push direction in history
+            self.history.append(self.DIRECTIONS[self.bender.direction])
 
             # handle new cell
             cell_value = self.ground.get_cell(self.bender.line, self.bender.column)[0]
@@ -183,9 +194,14 @@ class Solution(object):
                 else:
                     self.bender.line = self.teleporter_a[0]
                     self.bender.column = self.teleporter_a[1]
-
-            # push direction in history
-            self.history.append(self.DIRECTIONS[self.bender.direction])
+            elif cell_value == 'E':
+                self.bender.direction = self.DIRECTIONS.index('EAST')
+            elif cell_value == 'N':
+                self.bender.direction = self.DIRECTIONS.index('NORTH')
+            elif cell_value == 'S':
+                self.bender.direction = self.DIRECTIONS.index('SOUTH')
+            elif cell_value == 'W':
+                self.bender.direction = self.DIRECTIONS.index('WEST')
 
         # print the path
         for direction in self.history:
