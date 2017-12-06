@@ -15,6 +15,10 @@ class Ground(object):
     def init_ground(self, lines):
         """ Fill the ground
 
+            Each cell is a list:
+                first element: the cell value
+                second element: states of Bender when he was on this cell (to detect loops)
+
             Args:
                 lines -- list of strings -- the ground's lines
         """
@@ -22,7 +26,7 @@ class Ground(object):
         for i in range(self.nb_lines):
             lines[i] = list(lines[i])
             for j in range(self.nb_columns):
-                lines[i][j] = [lines[i][j], None]
+                lines[i][j] = [lines[i][j], []]
             self.ground.append(lines[i])
 
     def get_cell(self, line, column):
@@ -39,19 +43,20 @@ class Ground(object):
         """
         return self.ground[line][column][0], self.ground[line][column][1]
 
-    def set_cell(self, line, column, value=None, visited=None):
+    def set_cell(self, line, column, value=None, state=None):
         """ Update a cell of the ground
 
             Args:
                 line -- int -- the line index
                 column -- int -- the column index
                 value -- string -- the new cell's value
-                visited -- boolean -- the direction of Blender when visiting the cell
+                state -- tuple -- the state of Blender when visiting the cell
         """
         if value:
             self.ground[line][column][0] = value
-        if visited:
-            self.ground[line][column][1] = visited
+        if state:
+            # push the new state
+            self.ground[line][column][1].append(state)
 
     def find_cells(self, value):
         """ Return the coordinates of all the cells that matches the given value
@@ -68,6 +73,10 @@ class Ground(object):
                     matches.append([i, j])
         return matches
 
+    def clean_states(self):
+        for i in range(self.nb_lines):
+            for j in range(self.nb_columns):
+                self.ground[i][j] = [self.ground[i][j][0], []]
 
 class Bender(object):
     """ Represent the robot Bender
@@ -133,6 +142,8 @@ class Solution(object):
         elif value == 'X' and self.bender.drunk:
             # empty this cell
             self.ground.set_cell(line, column, value='x')
+            # the map has changed => clean loops detectors
+            self.ground.clean_states()
         return True
 
     def run(self):
@@ -170,12 +181,17 @@ class Solution(object):
                         else:
                             self.bender.direction = (self.bender.direction + 1) % 4
 
+            blender_state = (self.bender.direction,
+                             self.bender.drunk,
+                             self.inverse_direction)
             # if cell has already been visited, with the same direction => LOOP
-            if self.ground.get_cell(self.bender.line, self.bender.column)[1] == self.bender.direction:
+            if blender_state in self.ground.get_cell(self.bender.line, self.bender.column)[1]:
                 print("LOOP")
                 return
             # else, set the cell to visited
-            self.ground.set_cell(self.bender.line, self.bender.column, visited=self.bender.direction)
+            self.ground.set_cell(self.bender.line,
+                                 self.bender.column,
+                                 state=blender_state)
 
             # push direction in history
             self.history.append(self.DIRECTIONS[self.bender.direction])
