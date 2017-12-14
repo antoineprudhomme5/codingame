@@ -1,5 +1,5 @@
 from collections import deque
-
+import sys
 class Network(object):
     """ Graph that represent the skynet's network
 
@@ -19,6 +19,9 @@ class Network(object):
         self.gateways = {}
         self.agent = None
 
+        for i in range(nb_nodes):
+            self.graph[i] = []
+
     def add_link(self, a, b):
         self._add_child(a, b)
         self._add_child(b, a)
@@ -27,10 +30,7 @@ class Network(object):
         self.gateways[n] = True
 
     def _add_child(self, parent, child):
-        if parent in self.graph:
-            self.graph[parent].append(child)
-        else:
-            self.graph[parent] = [child]
+        self.graph[parent].append(child)
 
     def next_link_to_cut(self):
         """ find the closest gateway to the agent node and cut the link
@@ -42,26 +42,43 @@ class Network(object):
             => (test case 2). In this case, choose the "less protected" gateway
             (with the most path to it)
         """
-        queue = deque()
-        queue.append(self.agent)
         parents = {}
         visited = {}
+        gateways = []
+
+        queue = deque()
+        next_queue = deque()
+        queue.append(self.agent)
 
         while len(queue):
             current = queue.pop()
-            # if it's a gateway, remove and return the link to this gateway
+
             if current in self.gateways:
-                self.graph[current].remove(parents[current])
-                self.graph[parents[current]].remove(current)
-                return "%d %d" % (parents[current], current)
-            # else, add unvisited children
+                gateways.append(current)
+
             for child in self.graph[current]:
                 if child not in visited:
                     visited[child] = True
-                    queue.append(child)
+                    next_queue.append(child)
                     parents[child] = current
 
-        return None
+            # if the current node level is empty and still not found
+            # gateways, children nodes becomes parent nodes and continue to search
+            if len(gateways) == 0 and len(queue) == 0:
+                queue = next_queue
+                next_queue = deque()
+
+        print(self.gateways, file=sys.stderr)
+        print(gateways, file=sys.stderr)
+
+        to_protect = gateways[0]
+        for i in range(1, len(gateways)):
+            if len(self.graph[parents[gateways[i]]]) > len(self.graph[parents[to_protect]]):
+                to_protect = gateways[i]
+
+        self.graph[to_protect].remove(parents[to_protect])
+        self.graph[parents[to_protect]].remove(to_protect)
+        return "%d %d" % (parents[to_protect], to_protect)
 
 nb_nodes, nb_links, nb_exits = [int(i) for i in input().split()]
 network = Network(nb_nodes, nb_links, nb_exits)
