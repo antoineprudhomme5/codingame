@@ -1,11 +1,11 @@
-import sys
-import math
 from collections import deque, namedtuple
 
 # define the Point namedtuple
 Point = namedtuple('Point', ['r', 'c'])
 
 def find_neighbours(arr, cell):
+    """ Given a cell and a grid, find the cell's reachable neighbours
+    """
     neighbours = [
         Point(r=cell[0], c=cell[1]+1),
         Point(r=cell[0], c=cell[1]-1),
@@ -15,6 +15,8 @@ def find_neighbours(arr, cell):
     return [neighbour for neighbour in neighbours if is_cell_reachable(arr, neighbour)]
 
 def is_cell_reachable(arr, cell):
+    """ Check if a cell is reachable (== in the grid and not a wall)
+    """
     return (cell[0] >= 0
             and cell[0] < len(arr)
             and cell[1] >= 0
@@ -22,9 +24,14 @@ def is_cell_reachable(arr, cell):
             and arr[cell[0]][cell[1]].value != '#')
 
 def heuristic(a, b):
+    """ Calculate the euclidean distance between 2 Point
+    """
     return abs(a.r - b.r) + abs(a.c - b.c)
 
 def a_star(arr, start, target):
+    """ A* pathfinding implementation. Used to go from a Point (start) to an other
+        (target).
+    """
     # cells already evaluated
     closed_set = {}
     # cells discovered by not evaluated yet
@@ -77,6 +84,8 @@ def a_star(arr, start, target):
 
 
 def BFS(grid, start, target):
+    """ Breadth First Search implementation. Used to explore the map.
+    """
     queue = deque()
     queue.append(start)
     parents = {start: None}
@@ -115,24 +124,31 @@ class Grid(object):
         self.grid = [None] * nb_rows
         self.CR_pos = None
         self.kirk_pos = None
+        self.start_pos = None
         self.CR_reached = False
 
     def update_row(self, row_index, row):
+        """ Update a grid's row
+        """
         self.grid[row_index] = row
         if not self.CR_pos:
-            for col, cell in enumerate(self.grid[row_index]):
-                if cell.value == 'C':
-                    self.CR_pos = Point(r=row_index, c=col)
-                    break
+            self.CR_pos = self.find_cell_in_row(row_index, 'C')
+        if not self.start_pos:
+            self.start_pos = self.find_cell_in_row(row_index, 'T')
 
-    def find_cell(self, arr, target):
-        for row in range(self.nb_rows):
-            for col, cell in enumerate(self.grid[row]):
-                if cell.value == target:
-                    return (row, col)
+    def find_cell_in_row(self, row_index, target):
+        """ Go through a grid's row to find the target. If target found, return
+            a Point, else None
+        """
+        for col, cell in enumerate(self.grid[row_index]):
+            if cell.value == target:
+                return Point(r=row_index, c=col)
         return None
 
     def find_direction(self, target):
+        """ Compare kirk's position with the target position and return
+            the direction to take to go from kirk to target
+        """
         if target.r > self.kirk_pos.r:
             return "DOWN"
         if target.c > self.kirk_pos.c:
@@ -165,7 +181,9 @@ while True:
 
     if grid.CR_reached:
         # run out
-        next_cell = Point(r=kirk_row, c=kirk_col-1)
+        # next_cell = Point(r=kirk_row, c=kirk_col-1)
+        path = a_star(grid.grid, grid.kirk_pos, grid.start_pos)
+        next_cell = path[len(path) - 2]
     else:
         if grid.CR_pos:
             # go to the command room
