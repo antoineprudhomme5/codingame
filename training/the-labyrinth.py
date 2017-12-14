@@ -7,9 +7,9 @@ def find_neighbours(arr, cell):
     """ Given a cell and a grid, find the cell's reachable neighbours
     """
     neighbours = [
-        Point(r=cell[0], c=cell[1]+1),
-        Point(r=cell[0], c=cell[1]-1),
         Point(r=cell[0]+1, c=cell[1]),
+        Point(r=cell[0], c=cell[1]-1),
+        Point(r=cell[0], c=cell[1]+1),
         Point(r=cell[0]-1, c=cell[1])]
 
     return [neighbour for neighbour in neighbours if is_cell_reachable(arr, neighbour)]
@@ -181,14 +181,23 @@ while True:
 
     if grid.CR_reached:
         # run out
-        # next_cell = Point(r=kirk_row, c=kirk_col-1)
         path = a_star(grid.grid, grid.kirk_pos, grid.start_pos)
         next_cell = path[len(path) - 2]
+        # decrease alarm
+        grid.alarm -= 1
     else:
         if grid.CR_pos:
-            # go to the command room
-            path = a_star(grid.grid, grid.kirk_pos, grid.CR_pos)
-            next_cell = path[len(path) - 2]
+            if grid.CR_pos:
+                # calculate the shortest known path from command room to start
+                path = a_star(grid.grid, grid.CR_pos, grid.start_pos)
+                # if start position can't be reach
+                if len(path)-1 > grid.alarm:
+                    # keep exploring to find a shorter path
+                    next_cell = BFS(grid.grid, grid.kirk_pos, "?")[2]
+                else:
+                    # go to the command room
+                    path = a_star(grid.grid, grid.kirk_pos, grid.CR_pos)
+                    next_cell = path[len(path) - 2]
         else:
             # keep exploring the grid to find the command room
             next_cell = BFS(grid.grid, grid.kirk_pos, "?")[2]
