@@ -29,6 +29,9 @@ class Network(object):
     def add_gateway(self, n):
         self.gateways[n] = True
 
+    def gateway_children(self, node):
+        return [n for n in self.graph[node] if (n in self.gateways)]
+
     def _add_child(self, parent, child):
         self.graph[parent].append(child)
 
@@ -68,12 +71,9 @@ class Network(object):
                 queue = next_queue
                 next_queue = deque()
 
-        print(self.gateways, file=sys.stderr)
-        print(gateways, file=sys.stderr)
-
         to_protect = gateways[0]
         for i in range(1, len(gateways)):
-            if len(self.graph[parents[gateways[i]]]) > len(self.graph[parents[to_protect]]):
+            if len(self.gateway_children(parents[gateways[i]])) > len(self.gateway_children(parents[to_protect])):
                 to_protect = gateways[i]
 
         self.graph[to_protect].remove(parents[to_protect])
