@@ -45,9 +45,10 @@ class Network(object):
             => (test case 2). In this case, choose the "less protected" gateway
             (with the most path to it)
         """
-        parents = {}
         visited = {}
-        gateways = []
+        parents = {}
+        lonely_gateways = []
+        depth = 1
 
         queue = deque()
         next_queue = deque()
@@ -56,29 +57,42 @@ class Network(object):
         while len(queue):
             current = queue.pop()
 
-            if current in self.gateways:
-                gateways.append(current)
+            print("-----------", file=sys.stderr)
+            print("current: %d" % (current), file=sys.stderr)
+            print("depth: %d" % (depth), file=sys.stderr)
 
+            gateways = []
             for child in self.graph[current]:
                 if child not in visited:
-                    visited[child] = True
-                    next_queue.append(child)
-                    parents[child] = current
+                    if child not in parents:
+                        parents[child] = current
+                    if child in self.gateways:
+                        gateways.append(child)
+                    else:
+                        visited[child] = True
+                        next_queue.append(child)
 
-            # if the current node level is empty and still not found
-            # gateways, children nodes becomes parent nodes and continue to search
-            if len(gateways) == 0 and len(queue) == 0:
+            print("gateways: " + str(gateways), file=sys.stderr)
+
+            if len(gateways):
+                if (depth == 1) or (len(gateways) > 1):
+                    print("priority : %d %d" % (gateways[0], current), file=sys.stderr)
+                    self.graph[gateways[0]].remove(current)
+                    self.graph[current].remove(gateways[0])
+                    return "%d %d" % (current, gateways[0])
+                else:
+                    # there is only one gateway, but at depth > 1
+                    lonely_gateways += gateways
+
+            if len(queue) == 0:
                 queue = next_queue
                 next_queue = deque()
+                depth += 1
 
-        to_protect = gateways[0]
-        for i in range(1, len(gateways)):
-            if len(self.gateway_children(parents[gateways[i]])) > len(self.gateway_children(parents[to_protect])):
-                to_protect = gateways[i]
-
-        self.graph[to_protect].remove(parents[to_protect])
-        self.graph[parents[to_protect]].remove(to_protect)
-        return "%d %d" % (parents[to_protect], to_protect)
+        print("default : %d %d" % (lonely_gateways[0], parents[lonely_gateways[0]]), file=sys.stderr)
+        self.graph[lonely_gateways[0]].remove(parents[lonely_gateways[0]])
+        self.graph[parents[lonely_gateways[0]]].remove(lonely_gateways[0])
+        return "%d %d" % (parents[lonely_gateways[0]], lonely_gateways[0])
 
 nb_nodes, nb_links, nb_exits = [int(i) for i in input().split()]
 network = Network(nb_nodes, nb_links, nb_exits)
