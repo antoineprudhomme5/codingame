@@ -3,13 +3,13 @@ import sys
 class Cell(object):
     def __init__(self):
         self.wall = False
-        self.player = None
+        self.players = []
 
     def __str__(self):
         if self.wall:
             return "x"
-        if self.player:
-            return str(self.player.id)
+        if self.players:
+            return ''.join(str(player.id) for player in self.players)
         return "."
 
 class Player(object):
@@ -45,13 +45,12 @@ class Board(object):
                 y -- int -- new y coordinate
                 walls_left -- int -- number of walls this player can still place
         """
-        #
-        current_cell = self.map[self.players[id].y][self.players[id].x]
-        if current_cell.player and current_cell.player.id == id:
-            self.map[self.players[id].y][self.players[id].x].player = None
+        # remove the player from his current cell
+        if self.players[id] in self.map[self.players[id].y][self.players[id].x].players:
+            self.map[self.players[id].y][self.players[id].x].players.remove(self.players[id])
         # set the new player's cell
         self.players[id].update(x, y, walls_left)
-        self.map[y][x].player = self.players[id]
+        self.map[y][x].players.append(self.players[id])
 
     def add_wall(self, x, y, orientation):
         """ create a new wall
