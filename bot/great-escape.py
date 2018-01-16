@@ -140,7 +140,7 @@ class Board(object):
             Args:
                 id -- int -- the player's id
 
-            return the next Cell he has to reach
+            return the next path to his goal (a list of Cell)
         """
         player = self.players[id]
         current_level = deque([self.map[player.y][player.x]])
@@ -155,12 +155,11 @@ class Board(object):
             # if the cell is where we want to go,
             # reup the path and get the next cell to reach
             if current_cell.x == player.x_goal:
-                previous = current_cell
-                current_cell = found_cells[current_cell]
+                path = [current_cell]
                 while current_cell in found_cells and found_cells[current_cell]:
-                    previous = current_cell
                     current_cell = found_cells[current_cell]
-                return previous
+                    path.append(current_cell)
+                return list(reversed(path[:-1]))
 
             # add his unvisited neighbours to the next level
             for neighbour in self._cell_neighbours(current_cell):
@@ -202,6 +201,7 @@ while True:
 
     print(board, file=sys.stderr)
     # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
-    next_cell = board.find_shortest_path(my_id)
+    path = board.find_shortest_path(my_id)
+    next_cell = path[0]
     direction = board.player_cell(my_id).compare(next_cell)
     print(direction)
