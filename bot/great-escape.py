@@ -22,8 +22,8 @@ class Cell(object):
         if cell.x < self.x:
             return "LEFT"
         if cell.y > self.y:
-            return "UP"
-        return "DOWN"
+            return "DOWN"
+        return "UP"
 
     def __str__(self):
         if self.is_wall:
@@ -33,12 +33,13 @@ class Cell(object):
         return "."
 
 class Player(object):
-    def __init__(self, id, board_width):
+    def __init__(self, id, x_goal, y_goal):
         self.id = id
         self.x = 0
         self.y = 0
         self.walls_left = 0
-        self.x_goal = (board_width-1) if id == 0 else 0
+        self.x_goal = x_goal
+        self.y_goal = y_goal
 
     def update(self, x, y, walls_left):
         """ update the coordinates and number of walls left
@@ -52,8 +53,17 @@ class Board(object):
     def __init__(self, width, height, nb_player):
         self.width = width
         self.height = height
+        # init the players's goals
+        self.goals = [
+                (width-1, None),
+                (0, None),
+                (height-1, None),
+                (0, None)
+            ]
         # init the players
-        self.players = [Player(i, width) for i in range(nb_player)]
+        self.players = []
+        for i in range(nb_player):
+            self.players.append(Player(i, self.goals[i][0], self.goals[i][1]))
         # init the map with empty cells
         self.map = [[Cell(x, y) for x in range(width)] for y in range(height)]
 
@@ -154,7 +164,7 @@ class Board(object):
 
             # if the cell is where we want to go,
             # reup the path and get the next cell to reach
-            if current_cell.x == player.x_goal:
+            if current_cell.x == player.x_goal or current_cell.y == player.y_goal:
                 path = [current_cell]
                 while current_cell in found_cells and found_cells[current_cell]:
                     current_cell = found_cells[current_cell]
@@ -200,8 +210,22 @@ while True:
         board.add_wall(wall_x, wall_y, wall_orientation)
 
     print(board, file=sys.stderr)
+
+    # calculate the shortest path for all players
+    paths = [board.find_shortest_path(i) for i in range(player_count)]
+
+    # if an enemy's path is shorter than mine, I have to block him
+    # if an enemy's path is same length than mine but he play before, I have to block him too
+    enemy_to_block = None
+    for i in range(player_count):
+        if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id == 1):
+            enemy_to_block = paths[i]
+
     # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
-    path = board.find_shortest_path(my_id)
-    next_cell = path[0]
+    """
+    if block_enemy and board.players[my_id].walls_left > 0:
+        # TODO: placer correctement un mur
+    """
+    next_cell = paths[my_id][0]
     direction = board.player_cell(my_id).compare(next_cell)
     print(direction)
