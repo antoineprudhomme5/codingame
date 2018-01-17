@@ -129,6 +129,17 @@ class Board(object):
         """
         return (cell_x >= 0 and cell_x < self.width) and (cell_y >= 0 and cell_y < self.height)
 
+    def _valid_wall(self, wall_x, wall_y):
+        """ Check if a cell exists in the map
+
+            Args:
+                wall_x -- int -- x coordinate of the wall
+                wall_y -- int -- y coordinate of the wall
+
+            return True if the wall can be placed here
+        """
+        return (wall_x >= 1 and wall_x < self.width-1) and (wall_y >= 1 and wall_y < self.height-1)
+
     def _cell_neighbours(self, cell, wall=False):
         """ Find the reachable neighbours of the cell given his coordinates
 
@@ -177,16 +188,20 @@ class Board(object):
                 y = enemy_path[i].y
                 if direction == "UP" or direction == "DOWN":
                     # check if empty cell at the left or right
-                    if self._cell_exist(x-1, y):
-                        return (x-1, y, "H")
-                    if self._cell_exist(x+1, y):
-                        return (x+1, y, "H")
+                    if self._valid_wall(x-1, y):
+                        if (not self._valid_wall(x-2, y) or not self.map[y][x-2].is_wall):
+                            return (x-1, y, "H")
+                    if self._valid_wall(x+1, y):
+                        if (not self._valid_wall(x+2, y) or not self.map[y][x+2].is_wall):
+                            return (x, y, "H")
                 else:
                     # check if empty cell at the left or right
-                    if self._cell_exist(x, y-1):
-                        return (x, y-1, "V")
-                    if self._cell_exist(x, y+1):
-                        return (x, y+1, "V")
+                    if self._valid_wall(x, y-1):
+                        if (not self._valid_wall(x, y-2) or not self.map[y-2][x].is_wall):
+                            return (x, y-1, "V")
+                    if self._valid_wall(x, y+1):
+                        if (not self._valid_wall(x, y+2) or not self.map[y+2][x].is_wall):
+                            return (x, y, "V")
 
         return None
 
@@ -271,8 +286,8 @@ while True:
     # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
     can_block_enemy = None
     if enemy_to_block and board.players[my_id].walls_left > 0:
-        print("BLOOOOCKKK", file=sys.stderr)
         can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
+
     print(can_block_enemy, file=sys.stderr)
     if can_block_enemy:
         print("%d %d %s" % can_block_enemy)
