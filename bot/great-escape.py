@@ -1,6 +1,9 @@
 import sys
 from collections import deque
 
+# TODO: LES MURS NE SONT PAS SUR LES CELLULES, MAIS ENTRE LES CELLULES ...
+# refactoring à faire pour fix ça
+
 class Cell(object):
     def __init__(self, x, y):
         self.x = x
@@ -129,16 +132,29 @@ class Board(object):
         """
         return (cell_x >= 0 and cell_x < self.width) and (cell_y >= 0 and cell_y < self.height)
 
-    def _valid_wall(self, wall_x, wall_y):
-        """ Check if a cell exists in the map
+    def _valid_wall(self, x1, y1, x2, y2, direction):
+        """ Check if the given when can be placed on the map
 
             Args:
-                wall_x -- int -- x coordinate of the wall
-                wall_y -- int -- y coordinate of the wall
+                x1 -- int -- x coordinate of the first wall's cell
+                y1 -- int -- y coordinate of the first wall's cell
+                x2 -- int -- x coordinate of the second wall's cell
+                y3 -- int -- y coordinate of the second wall's cell
 
-            return True if the wall can be placed here
+            return True if the wall can be placed
         """
-        return (wall_x >= 1 and wall_x < self.width-1) and (wall_y >= 1 and wall_y < self.height-1)
+        if x1 < 1 or x1 > self.width-1 or y1 < 1 or y1 > self.height-1:
+            return False
+
+        first_ngbr = (x1-1, y1) if direction == "V" else (x1, y1-1)
+        second_ngbr = (x2+1, y2) if direction == "V" else (x2, y2+1)
+
+        if self._cell_exist(first_ngbr[0], first_ngbr[1]) and self.map[first_ngbr[1]][first_ngbr[0]].is_wall:
+            return False
+        if self._cell_exist(second_ngbr[0], second_ngbr[1]) and self.map[second_ngbr[1]][second_ngbr[0]].is_wall:
+            return False
+
+        return True
 
     def _cell_neighbours(self, cell, wall=False):
         """ Find the reachable neighbours of the cell given his coordinates
@@ -186,23 +202,19 @@ class Board(object):
 
                 x = enemy_path[i].x
                 y = enemy_path[i].y
+
                 if direction == "UP" or direction == "DOWN":
                     # check if empty cell at the left or right
-                    if self._valid_wall(x-1, y):
-                        if (not self._valid_wall(x-2, y) or not self.map[y][x-2].is_wall):
-                            return (x-1, y, "H")
-                    if self._valid_wall(x+1, y):
-                        if (not self._valid_wall(x+2, y) or not self.map[y][x+2].is_wall):
-                            return (x, y, "H")
+                    if self._valid_wall(x-1, y, x, y, "H"):
+                        return (x-1, y, "H")
+                    if self._valid_wall(x, y, x+1, y, "H"):
+                        return (x, y, "H")
                 else:
                     # check if empty cell at the left or right
-                    if self._valid_wall(x, y-1):
-                        if (not self._valid_wall(x, y-2) or not self.map[y-2][x].is_wall):
-                            return (x, y-1, "V")
-                    if self._valid_wall(x, y+1):
-                        if (not self._valid_wall(x, y+2) or not self.map[y+2][x].is_wall):
-                            return (x, y, "V")
-
+                    if self._valid_wall(x, y-1, x, y, "V"):
+                        return (x, y-1, "V")
+                    if self._valid_wall(x, y, x, y+1, "V"):
+                        return (x, y, "V")
         return None
 
     def find_shortest_path(self, id):
