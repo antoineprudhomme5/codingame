@@ -73,8 +73,8 @@ class Board(object):
         self.goals = [
                 (width-1, None),
                 (0, None),
-                (height-1, None),
-                (0, None)
+                (None, height-1),
+                (None, 0)
             ]
         # init the players
         self.players = []
