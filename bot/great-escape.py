@@ -25,21 +25,11 @@ class Cell(object):
         return "UP"
 
     def is_free(self):
-        """ Check if a cell is free
+        """ Check if the Cell is free
 
-            return a boolean
+            return boolean
         """
         return not (self.is_wall or len(self.players))
-
-    def euclidean_dist(self, cell):
-        """ Calculate the euclidean distance between 2 cells
-
-            Args:
-                cell -- Cell -- the other cell
-
-            return integer, the euclidean distance
-        """
-        return abs(self.x - cell.x) + abs(self.y - cell.y)
 
     def __str__(self):
         if self.is_wall:
@@ -111,8 +101,10 @@ class Board(object):
         """
         self.map[y][x].is_wall = True
         if orientation == "V" and y+1 < self.height:
+            ###print("wall => %d %d et %d %d" % (x, y, x, y+1), file=sys.stderr)
             self.map[y+1][x].is_wall = True
         if orientation == "H" and x+1 < self.width:
+            ###print("wall => %d %d et %d %d" % (x, y, x+1, y), file=sys.stderr)
             self.map[y][x+1].is_wall = True
 
     def player_cell(self, player_id):
@@ -176,8 +168,8 @@ class Board(object):
             my_path_dic[my_path[i]] = True
         # check if a cell is not on my path
         for i in range(1, len(enemy_path)):
-            if enemy_path[i] not in my_path_dic and not enemy_path[i].is_wall:
-                ###print("%d %d" % (enemy_path[i].x, enemy_path[i].y), file=sys.stderr)
+            if enemy_path[i] not in my_path_dic and enemy_path[i].is_free():
+                ###print("to block => %d %d" % (enemy_path[i].x, enemy_path[i].y), file=sys.stderr)
                 # compare the cells to know the enemy direction at this point
                 direction = enemy_path[i-1].compare(enemy_path[i])
 
