@@ -103,13 +103,13 @@ class Board(object):
         if orientation == "V":
             self.map[y][x].left = False
             self.map[y+1][x].left = False
-            if x < 0:
-                self.map[y][x-1].down = False
-                self.map[y+1][x-1].down = False
+            if x > 0:
+                self.map[y][x-1].right = False
+                self.map[y+1][x-1].right = False
         if orientation == "H":
             self.map[y][x].up = False
             self.map[y][x+1].up = False
-            if y < 0:
+            if y > 0:
                 self.map[y-1][x].down = False
                 self.map[y-1][x+1].down = False
 

@@ -4,14 +4,33 @@ from great_escape import Cell, Board
 
 class TestGreatEscape(unittest.TestCase):
 
+    def test_add_wall_vertical(self):
+        # create board
+        board = Board(9, 9, 3)
+        # create a horizontal wall
+        h_wall_x = 5
+        h_wall_y = 2
+        board.add_wall(h_wall_x, h_wall_y, "H")
+        # check that the wall has been created
+        self.assertFalse(board.map[h_wall_y][h_wall_x].up)
+        self.assertFalse(board.map[h_wall_y][h_wall_x+1].up)
+        self.assertFalse(board.map[h_wall_y-1][h_wall_x].down)
+        self.assertFalse(board.map[h_wall_y-1][h_wall_x+1].down)
+        # create a vertical wall
+        v_wall_x = 5
+        v_wall_y = 5
+        board.add_wall(v_wall_x, v_wall_y, "V")
+        # check that the wall has been created
+        self.assertFalse(board.map[v_wall_y][v_wall_x].left)
+        self.assertFalse(board.map[v_wall_y+1][v_wall_x].left)
+        self.assertFalse(board.map[v_wall_y][v_wall_x-1].right)
+        self.assertFalse(board.map[v_wall_y+1][v_wall_x-1].right)
+
     def test_update_player(self):
         """ test the player's position
         """
         # create board
-        width = 9
-        height = 9
-        nb_players = 3
-        board = Board(width, height, nb_players)
+        board = Board(9, 9, 3)
         # player info
         player_id = 0
         player_x = 5
