@@ -8,8 +8,12 @@ class Cell(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.is_wall = False
         self.players = []
+        # directions avaibles from this cell
+        self.up = True
+        self.down = True
+        self.right = True
+        self.left = True
 
     def compare(self, cell):
         """ Compare this instance with the Cell passed in parameters
@@ -33,13 +37,6 @@ class Cell(object):
             return boolean
         """
         return not (self.is_wall or len(self.players))
-
-    def __str__(self):
-        if self.is_wall:
-            return "x"
-        if self.players:
-            return ''.join(str(player.id) for player in self.players)
-        return "."
 
 class Player(object):
     def __init__(self, id, x_goal, y_goal):
@@ -75,6 +72,12 @@ class Board(object):
             self.players.append(Player(i, self.goals[i][0], self.goals[i][1]))
         # init the map with empty cells
         self.map = [[Cell(x, y) for x in range(width)] for y in range(height)]
+        for i in range(width):
+            self.map[0][i].up = False
+            self.map[height-1][i].down = False
+        for i in range(height):
+            self.map[i][0].left = False
+            self.map[i][width-1].right = False
 
     def update_player(self, id, x, y, walls_left):
         """ update a player in the board
@@ -102,13 +105,18 @@ class Board(object):
                 y -- int -- y coordinate
                 orientation -- string -- V for vertical, H for horizontal
         """
-        self.map[y][x].is_wall = True
-        if orientation == "V" and y+1 < self.height:
-            ###print("wall => %d %d et %d %d" % (x, y, x, y+1), file=sys.stderr)
-            self.map[y+1][x].is_wall = True
-        if orientation == "H" and x+1 < self.width:
-            ###print("wall => %d %d et %d %d" % (x, y, x+1, y), file=sys.stderr)
-            self.map[y][x+1].is_wall = True
+        if orientation == "V":
+            self.map[y][x].left = False
+            self.map[y+1][x].left = False
+            if x < 0:
+                self.map[y][x-1].down = False
+                self.map[y+1][x-1].down = False
+        if orientation == "H":
+            self.map[y][x].up = False
+            self.map[y][x+1].up = False
+            if y < 0:
+                self.map[y-1][x].down = False
+                self.map[y-1][x+1].down = False
 
     def player_cell(self, player_id):
         """ Given the id of a player, return his Cell
@@ -156,25 +164,21 @@ class Board(object):
 
         return True
 
-    def _cell_neighbours(self, cell, wall=False):
+    def _cell_neighbours(self, cell):
         """ Find the reachable neighbours of the cell given his coordinates
 
             Args:
                 cell -- Cell -- the current cell
-                wall -- boolean -- if False, don't return the neighbours cell that are walls
 
             return a list of Cell
         """
         neighbours = []
-        directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+
         # try each direction
-        for d in directions:
-            # check if the cell exists
-            if self._cell_exist(cell.x + d[0], cell.y + d[1]):
-                temp_cell = self.map[cell.y + d[1]][cell.x + d[0]]
-                # if we don't want walls, check that the Cell is not a wall
-                if not wall and not temp_cell.is_wall:
-                    neighbours.append(temp_cell)
+        if cell.up: neighbours.append(self.map[cell.y-1][cell.x])
+        if cell.down: neighbours.append(self.map[cell.y+1][cell.x])
+        if cell.right: neighbours.append(self.map[cell.y][cell.x+1])
+        if cell.left: neighbours.append(self.map[cell.y][cell.x-1])
 
         return neighbours
 
@@ -258,11 +262,20 @@ class Board(object):
 
     def __str__(self):
         """ Build and return a string describing the map
-            The content of each cell is represented by a character
-
-            return a multilines string (the game's map)
         """
-        return '\n'.join(''.join(str(cell) for cell in self.map[i]) for i in range(self.height))
+        s = " _ " * self.width + "\n"
+        for j in range(self.height):
+            t = ""
+            for i in range(self.width):
+                t += " " if self.map[j][i].left else "|"
+                t += "."
+                t += " " if self.map[j][i].right else "|"
+            t += "\n"
+            for i in range(self.width):
+                t += " _ " if self.map[j][i].down else "   "
+            t += "\n"
+            s += t
+        return s
 
 # player_count: number of players (2 or 3)
 # my_id: id of my player (0 = 1st player, 1 = 2nd player, ...)
@@ -283,11 +296,15 @@ while True:
         wall_y = int(wall_y)
         board.add_wall(wall_x, wall_y, wall_orientation)
 
-    ###print(board, file=sys.stderr)
+    #print(board, file=sys.stderr)
 
     # calculate the shortest path for all players
     paths = [board.find_shortest_path(i) for i in range(player_count)]
 
+    for cell in paths[my_id]:
+        print("%d %d" % (cell.x, cell.y), file=sys.stderr)
+
+    """
     # if an enemy's path is shorter than mine, I have to block him
     # if an enemy's path is same length than mine but he play before, I have to block him too
     enemy_to_block = None
@@ -301,6 +318,8 @@ while True:
         can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
 
     print(can_block_enemy, file=sys.stderr)
+    """
+    can_block_enemy = None
     if can_block_enemy:
         print("%d %d %s" % can_block_enemy)
     else:
