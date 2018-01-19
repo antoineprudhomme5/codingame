@@ -29,14 +29,9 @@ class Cell(object):
             return "LEFT"
         if cell.y > self.y:
             return "DOWN"
-        return "UP"
-
-    def is_free(self):
-        """ Check if the Cell is free
-
-            return boolean
-        """
-        return not (self.is_wall or len(self.players))
+        if cell.y < self.y:
+            return "UP"
+        return None
 
 class Player(object):
     def __init__(self, id, x_goal, y_goal):
@@ -199,7 +194,7 @@ class Board(object):
             my_path_dic[my_path[i]] = True
         # check if a cell is not on my path
         for i in range(1, len(enemy_path)):
-            if enemy_path[i] not in my_path_dic and enemy_path[i].is_free():
+            if enemy_path[i] not in my_path_dic:
                 ###print("to block => %d %d" % (enemy_path[i].x, enemy_path[i].y), file=sys.stderr)
                 # compare the cells to know the enemy direction at this point
                 direction = enemy_path[i-1].compare(enemy_path[i])
@@ -277,52 +272,53 @@ class Board(object):
             s += t
         return s
 
-# player_count: number of players (2 or 3)
-# my_id: id of my player (0 = 1st player, 1 = 2nd player, ...)
-board_width, board_height, player_count, my_id = map(int, input().split())
+if __name__ == '__main__':
+    # player_count: number of players (2 or 3)
+    # my_id: id of my player (0 = 1st player, 1 = 2nd player, ...)
+    board_width, board_height, player_count, my_id = map(int, input().split())
 
-board = Board(board_width, board_height, player_count)
-# game loop
-while True:
-    for i in range(player_count):
-        # walls_left: number of walls available for the player
-        x, y, walls_left = map(int, input().split())
-        board.update_player(i, x, y, walls_left)
-    wall_count = int(input())  # number of walls on the board
-    for i in range(wall_count):
-        # wall_orientation: wall orientation ('H' or 'V')
-        wall_x, wall_y, wall_orientation = input().split()
-        wall_x = int(wall_x)
-        wall_y = int(wall_y)
-        board.add_wall(wall_x, wall_y, wall_orientation)
+    board = Board(board_width, board_height, player_count)
+    # game loop
+    while True:
+        for i in range(player_count):
+            # walls_left: number of walls available for the player
+            x, y, walls_left = map(int, input().split())
+            board.update_player(i, x, y, walls_left)
+        wall_count = int(input())  # number of walls on the board
+        for i in range(wall_count):
+            # wall_orientation: wall orientation ('H' or 'V')
+            wall_x, wall_y, wall_orientation = input().split()
+            wall_x = int(wall_x)
+            wall_y = int(wall_y)
+            board.add_wall(wall_x, wall_y, wall_orientation)
 
-    #print(board, file=sys.stderr)
+        #print(board, file=sys.stderr)
 
-    # calculate the shortest path for all players
-    paths = [board.find_shortest_path(i) for i in range(player_count)]
+        # calculate the shortest path for all players
+        paths = [board.find_shortest_path(i) for i in range(player_count)]
 
-    for cell in paths[my_id]:
-        print("%d %d" % (cell.x, cell.y), file=sys.stderr)
+        for cell in paths[my_id]:
+            print("%d %d" % (cell.x, cell.y), file=sys.stderr)
 
-    """
-    # if an enemy's path is shorter than mine, I have to block him
-    # if an enemy's path is same length than mine but he play before, I have to block him too
-    enemy_to_block = None
-    for i in range(player_count):
-        if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id > i):
-            enemy_to_block = paths[i]
+        """
+        # if an enemy's path is shorter than mine, I have to block him
+        # if an enemy's path is same length than mine but he play before, I have to block him too
+        enemy_to_block = None
+        for i in range(player_count):
+            if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id > i):
+                enemy_to_block = paths[i]
 
-    # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
-    can_block_enemy = None
-    if enemy_to_block and board.players[my_id].walls_left > 0:
-        can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
+        # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
+        can_block_enemy = None
+        if enemy_to_block and board.players[my_id].walls_left > 0:
+            can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
 
-    print(can_block_enemy, file=sys.stderr)
-    """
-    can_block_enemy = None
-    if can_block_enemy:
-        print("%d %d %s" % can_block_enemy)
-    else:
-        next_cell = paths[my_id][1]
-        direction = board.player_cell(my_id).compare(next_cell)
-        print(direction)
+        print(can_block_enemy, file=sys.stderr)
+        """
+        can_block_enemy = None
+        if can_block_enemy:
+            print("%d %d %s" % can_block_enemy)
+        else:
+            next_cell = paths[my_id][1]
+            direction = board.player_cell(my_id).compare(next_cell)
+            print(direction)
