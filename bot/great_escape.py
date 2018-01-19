@@ -74,7 +74,7 @@ class Board(object):
             self.map[i][0].left = False
             self.map[i][width-1].right = False
 
-    def update_player(self, id, x, y, walls_left):
+    def update_player(self, id, x, y, walls_left=0):
         """ update a player in the board
 
             Args:
