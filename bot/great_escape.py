@@ -1,8 +1,9 @@
 import sys
 from collections import deque
 
-# TODO: LES MURS NE SONT PAS SUR LES CELLULES, MAIS ENTRE LES CELLULES ...
-# refactoring à faire pour fix ça
+# TODO: sometimes, my IA dont put wall to block
+
+# TODO: when more than 2 players, don't use all the walls at the beginning
 
 class Cell(object):
     def __init__(self, x, y):
@@ -90,28 +91,27 @@ class Board(object):
         self.players[id].update(x, y, walls_left)
         self.map[y][x].players.append(self.players[id])
 
-    def add_wall(self, x, y, orientation):
-        """ create a new wall
-            if it already exists, nothing will change
-            else, a new wall will be created
+    def set_wall(self, x, y, orientation, value=False):
+        """ create or remove a wall
 
             Args:
                 x -- int -- x coordinate
                 y -- int -- y coordinate
                 orientation -- string -- V for vertical, H for horizontal
+                value -- boolean -- if False, build a wall. If True, remove the wall
         """
         if orientation == "V":
-            self.map[y][x].left = False
-            self.map[y+1][x].left = False
+            self.map[y][x].left = value
+            self.map[y+1][x].left = value
             if x > 0:
-                self.map[y][x-1].right = False
-                self.map[y+1][x-1].right = False
+                self.map[y][x-1].right = value
+                self.map[y+1][x-1].right = value
         if orientation == "H":
-            self.map[y][x].up = False
-            self.map[y][x+1].up = False
+            self.map[y][x].up = value
+            self.map[y][x+1].up = value
             if y > 0:
-                self.map[y-1][x].down = False
-                self.map[y-1][x+1].down = False
+                self.map[y-1][x].down = value
+                self.map[y-1][x+1].down = value
 
     def player_cell(self, player_id):
         """ Given the id of a player, return his Cell
@@ -135,32 +135,42 @@ class Board(object):
         """
         return (cell_x >= 0 and cell_x < self.width) and (cell_y >= 0 and cell_y < self.height)
 
-    def _valid_wall(self, x, y, direction):
+    def _valid_wall(self, x, y, direction, enemy):
         """ Check if the given wall can be placed on the map
 
             Args:
                 x -- int -- x coordinate of the first wall's cell
                 y -- int -- y coordinate of the first wall's cell
+                direction -- string -- wall's direction: V or H
+                enemy -- int -- the id of the enemy to block
 
             return True if the wall can be placed
         """
         if x < 0 or y < 0:
             return False
 
+        is_valid = False
+
         if direction == "V" and y < self.height-1:
             # if top/bottom neighbours, check that they don't have a wall to the left
             if (y-1 < 0 or self.map[y-1][x].left) and (y+1 > self.height-1 or self.map[y+1][x].left):
                 # check if the wall will not cut another wall
                 if self.map[y][x].down or (x-1 < 0 or self.map[y][x-1].down):
-                    return True
+                    is_valid = True
         elif direction == "H" and x < self.width-1:
             # if right/left neighbours, check that they don't have a wall to the top
             if (x-1 < 0 or self.map[y][x-1].up) and (x+1 > self.width-1 or self.map[y][x+1].up):
                 # check if the wall will not cut another wall
                 if self.map[y][x].right or (y-1 < 0 or self.map[y-1][x].right):
-                    return True
+                    is_valid = True
 
-        return False
+        if is_valid:
+            # check if the enemy can steal reach his goal
+            self.set_wall(x, y, direction)
+            is_valid = bool(self.find_shortest_path(enemy))
+            self.set_wall(x, y, direction, True)
+
+        return is_valid
 
     def _cell_neighbours(self, cell):
         """ Find the reachable neighbours of the cell given his coordinates
@@ -180,12 +190,13 @@ class Board(object):
 
         return neighbours
 
-    def try_to_block_enemy(self, enemy_path, my_path):
+    def try_to_block_enemy(self, enemy, enemy_path, my_path):
         """ Try to put a wall on the map to block the enemy
             If it's possible, return the wall position and orientation
             If not, return None
 
             Args:
+                enemy -- int -- id of the enemy to block
                 enemy_path -- list of Cell -- the path of the enemy
                 my_path -- list of Cell -- my path
 
@@ -198,7 +209,6 @@ class Board(object):
         # check if a cell is not on my path
         for i in range(1, len(enemy_path)):
             if enemy_path[i] not in my_path_dic:
-                ###print("to block => %d %d" % (enemy_path[i].x, enemy_path[i].y), file=sys.stderr)
                 # compare the cells to know the enemy direction at this point
                 direction = enemy_path[i-1].compare(enemy_path[i])
 
@@ -207,15 +217,15 @@ class Board(object):
 
                 if direction == "UP" or direction == "DOWN":
                     # check if empty cell at the left or right
-                    if self._valid_wall(x-1, y, "H"):
+                    if self._valid_wall(x-1, y, "H", enemy):
                         return (x-1, y, "H")
-                    if self._valid_wall(x, y, "H"):
+                    if self._valid_wall(x, y, "H", enemy):
                         return (x, y, "H")
                 else:
                     # check if empty cell at the left or right
-                    if self._valid_wall(x, y-1, "V"):
+                    if self._valid_wall(x, y-1, "V", enemy):
                         return (x, y-1, "V")
-                    if self._valid_wall(x, y, "V"):
+                    if self._valid_wall(x, y, "V", enemy):
                         return (x, y, "V")
         return None
 
@@ -258,6 +268,8 @@ class Board(object):
                 current_level = next_level
                 next_level = deque()
 
+        return None
+
     def __str__(self):
         """ Build and return a string describing the map
         """
@@ -293,7 +305,7 @@ if __name__ == '__main__':
             wall_x, wall_y, wall_orientation = input().split()
             wall_x = int(wall_x)
             wall_y = int(wall_y)
-            board.add_wall(wall_x, wall_y, wall_orientation)
+            board.set_wall(wall_x, wall_y, wall_orientation)
 
         #print(board, file=sys.stderr)
 
@@ -308,12 +320,12 @@ if __name__ == '__main__':
         enemy_to_block = None
         for i in range(player_count):
             if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id > i):
-                enemy_to_block = paths[i]
+                enemy_to_block = i
 
         # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
         can_block_enemy = None
         if enemy_to_block and board.players[my_id].walls_left > 0:
-            can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
+            can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[enemy_to_block], paths[my_id])
 
         print(can_block_enemy, file=sys.stderr)
 
