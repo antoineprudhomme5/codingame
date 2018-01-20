@@ -135,29 +135,32 @@ class Board(object):
         """
         return (cell_x >= 0 and cell_x < self.width) and (cell_y >= 0 and cell_y < self.height)
 
-    def _valid_wall(self, x1, y1, x2, y2, direction):
-        """ Check if the given when can be placed on the map
+    def _valid_wall(self, x, y, direction):
+        """ Check if the given wall can be placed on the map
 
             Args:
-                x1 -- int -- x coordinate of the first wall's cell
-                y1 -- int -- y coordinate of the first wall's cell
-                x2 -- int -- x coordinate of the second wall's cell
-                y3 -- int -- y coordinate of the second wall's cell
+                x -- int -- x coordinate of the first wall's cell
+                y -- int -- y coordinate of the first wall's cell
 
             return True if the wall can be placed
         """
-        if x1 < 1 or x1 > self.width-1 or y1 < 1 or y1 > self.height-1:
+        if x < 0 or y < 0:
             return False
 
-        first_ngbr = (x1-1, y1) if direction == "V" else (x1, y1-1)
-        second_ngbr = (x2+1, y2) if direction == "V" else (x2, y2+1)
+        if direction == "V" and y < self.height-1:
+            # if top/bottom neighbours, check that they don't have a wall to the left
+            if (y-1 < 0 or self.map[y-1][x].left) and (y+1 > self.height-1 or self.map[y+1][x].left):
+                # check if the wall will not cut another wall
+                if self.map[y][x].down or (x-1 < 0 or self.map[y][x-1].down):
+                    return True
+        elif direction == "H" and x < self.width-1:
+            # if right/left neighbours, check that they don't have a wall to the top
+            if (x-1 < 0 or self.map[y][x-1].up) and (x+1 > self.width-1 or self.map[y][x+1].up):
+                # check if the wall will not cut another wall
+                if self.map[y][x].right or (y-1 < 0 or self.map[y-1][x].right):
+                    return True
 
-        if self._cell_exist(first_ngbr[0], first_ngbr[1]) and self.map[first_ngbr[1]][first_ngbr[0]].is_wall:
-            return False
-        if self._cell_exist(second_ngbr[0], second_ngbr[1]) and self.map[second_ngbr[1]][second_ngbr[0]].is_wall:
-            return False
-
-        return True
+        return False
 
     def _cell_neighbours(self, cell):
         """ Find the reachable neighbours of the cell given his coordinates
@@ -204,15 +207,15 @@ class Board(object):
 
                 if direction == "UP" or direction == "DOWN":
                     # check if empty cell at the left or right
-                    if self._valid_wall(x-1, y, x, y, "H"):
+                    if self._valid_wall(x-1, y, "H"):
                         return (x-1, y, "H")
-                    if self._valid_wall(x, y, x+1, y, "H"):
+                    if self._valid_wall(x, y, "H"):
                         return (x, y, "H")
                 else:
                     # check if empty cell at the left or right
-                    if self._valid_wall(x, y-1, x, y, "V"):
+                    if self._valid_wall(x, y-1, "V"):
                         return (x, y-1, "V")
-                    if self._valid_wall(x, y, x, y+1, "V"):
+                    if self._valid_wall(x, y, "V"):
                         return (x, y, "V")
         return None
 
@@ -300,7 +303,6 @@ if __name__ == '__main__':
         for cell in paths[my_id]:
             print("%d %d" % (cell.x, cell.y), file=sys.stderr)
 
-        """
         # if an enemy's path is shorter than mine, I have to block him
         # if an enemy's path is same length than mine but he play before, I have to block him too
         enemy_to_block = None
@@ -314,8 +316,7 @@ if __name__ == '__main__':
             can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[my_id])
 
         print(can_block_enemy, file=sys.stderr)
-        """
-        can_block_enemy = None
+
         if can_block_enemy:
             print("%d %d %s" % can_block_enemy)
         else:
