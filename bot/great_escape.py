@@ -1,8 +1,6 @@
 import sys
 from collections import deque
 
-# TODO: sometimes, my IA dont put wall to block
-
 # TODO: when more than 2 players, don't use all the walls at the beginning
 
 class Cell(object):
@@ -293,6 +291,7 @@ if __name__ == '__main__':
     board_width, board_height, player_count, my_id = map(int, input().split())
 
     board = Board(board_width, board_height, player_count)
+
     # game loop
     while True:
         for i in range(player_count):
@@ -312,25 +311,27 @@ if __name__ == '__main__':
         # calculate the shortest path for all players
         paths = [board.find_shortest_path(i) for i in range(player_count)]
 
-        for cell in paths[my_id]:
-            print("%d %d" % (cell.x, cell.y), file=sys.stderr)
-
-        # if an enemy's path is shorter than mine, I have to block him
-        # if an enemy's path is same length than mine but he play before, I have to block him too
-        enemy_to_block = None
+        # find the enemy with he shortest path
+        enemy_number_one = None
         for i in range(player_count):
             if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id > i):
-                enemy_to_block = i
+                enemy_number_one = i
 
-        # action: LEFT, RIGHT, UP, DOWN or "putX putY putOrientation" to place a wall
-        can_block_enemy = None
-        if enemy_to_block and board.players[my_id].walls_left > 0:
-            can_block_enemy = board.try_to_block_enemy(enemy_to_block, paths[enemy_to_block], paths[my_id])
+        wall = None
+        if len(paths) == 2:
+            # 1V1
+            print("1V1", file=sys.stderr)
+            if enemy_number_one != None and board.players[my_id].walls_left > 0:
+                wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
+        else:
+            #1v2
+            print("1V2", file=sys.stderr)
+            # check if I must block this enemy
+            if enemy_number_one and board.players[my_id].walls_left > 0 and (abs(len(paths[enemy_number_one]) - len(paths[my_id]))-2) >= len(paths[enemy_number_one])-1:
+                wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
 
-        print(can_block_enemy, file=sys.stderr)
-
-        if can_block_enemy:
-            print("%d %d %s" % can_block_enemy)
+        if wall:
+            print("%d %d %s" % wall)
         else:
             next_cell = paths[my_id][1]
             direction = board.player_cell(my_id).compare(next_cell)
