@@ -35,6 +35,7 @@ class Cell(object):
 class Player(object):
     def __init__(self, id, x_goal, y_goal):
         self.id = id
+        self.in_game = True
         self.x = 0
         self.y = 0
         self.walls_left = 0
@@ -85,9 +86,13 @@ class Board(object):
         # remove the player from his current cell
         if self.players[id] in self.map[self.players[id].y][self.players[id].x].players:
             self.map[self.players[id].y][self.players[id].x].players.remove(self.players[id])
-        # set the new player's cell
-        self.players[id].update(x, y, walls_left)
-        self.map[y][x].players.append(self.players[id])
+        # check if this player is still in the game
+        if x != -1 and y != -1:
+            # set the new player's cell
+            self.players[id].update(x, y, walls_left)
+            self.map[y][x].players.append(self.players[id])
+        else:
+            self.players[id].in_game = False
 
     def set_wall(self, x, y, orientation, value=False):
         """ create or remove a wall
@@ -276,11 +281,11 @@ class Board(object):
             t = ""
             for i in range(self.width):
                 t += " " if self.map[j][i].left else "|"
-                t += "."
+                t += str(self.map[j][i].players[0].id) if len(self.map[j][i].players) else "."
                 t += " " if self.map[j][i].right else "|"
             t += "\n"
             for i in range(self.width):
-                t += " _ " if self.map[j][i].down else "   "
+                t += " " if self.map[j][i].down else " _ "
             t += "\n"
             s += t
         return s
@@ -289,9 +294,7 @@ if __name__ == '__main__':
     # player_count: number of players (2 or 3)
     # my_id: id of my player (0 = 1st player, 1 = 2nd player, ...)
     board_width, board_height, player_count, my_id = map(int, input().split())
-
     board = Board(board_width, board_height, player_count)
-
     # game loop
     while True:
         for i in range(player_count):
@@ -306,29 +309,39 @@ if __name__ == '__main__':
             wall_y = int(wall_y)
             board.set_wall(wall_x, wall_y, wall_orientation)
 
-        #print(board, file=sys.stderr)
-
+        nb_players_in_game = 0
+        paths = [None] * player_count
         # calculate the shortest path for all players
-        paths = [board.find_shortest_path(i) for i in range(player_count)]
+        for i in range(player_count):
+            if board.players[i].in_game:
+                paths[i] = board.find_shortest_path(i)
+                nb_players_in_game += 1
+            else:
+                paths[i] = None
 
-        # find the enemy with he shortest path
+        # find the enemy with the shortest path
         enemy_number_one = None
         for i in range(player_count):
-            if i != my_id and (len(paths[my_id]) > len(paths[i])) or (len(paths[my_id]) == len(paths[i]) and my_id > i):
+            if i != my_id and paths[i] and (not enemy_number_one or len(paths[i] < len(paths[enemy_number_one]))):
                 enemy_number_one = i
 
+        me_remaining = len(paths[my_id])-1
+        enemy_remaining = len(paths[enemy_number_one])-1
+
         wall = None
-        if len(paths) == 2:
-            # 1V1
-            print("1V1", file=sys.stderr)
-            if enemy_number_one != None and board.players[my_id].walls_left > 0:
-                wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
-        else:
-            #1v2
-            print("1V2", file=sys.stderr)
-            # check if I must block this enemy
-            if enemy_number_one and board.players[my_id].walls_left > 0 and (abs(len(paths[enemy_number_one]) - len(paths[my_id]))-2) >= len(paths[enemy_number_one])-1:
-                wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
+        # check if I still have walls
+        if board.players[my_id].walls_left > 0:
+            if nb_players_in_game == 2:
+                # 1V1
+                if enemy_remaining < me_remaining:
+                    # if the enemy is closer than me, block him
+                    wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
+            else:
+                # 1v2
+                if enemy_remaining < (me_remaining - enemy_remaining):
+                    print("BLOOOCK", file=sys.stderr)
+                    wall = board.try_to_block_enemy(enemy_number_one, paths[enemy_number_one], paths[my_id])
+                    print(wall, file=sys.stderr)
 
         if wall:
             print("%d %d %s" % wall)
