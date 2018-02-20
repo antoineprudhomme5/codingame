@@ -2,25 +2,50 @@ import sys
 import math
 
 class Unit(object):
-    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+    def __init__(self, unit_id, x, y, vx, vy, radius):
         self.unit_id = unit_id
         self.x = x
         self.y = y
         self.vx = vx
         self.vy = vy
         self.radius = radius
+
+class WaterCarrier(object):
+    def __init__(self, quantity):
+        self.quantity = quantity
+
+class Wreck(Unit, WaterCarrier):
+    def __init__(self, unit_id, x, y, vx, vy, radius, extra):
+        Unit.__init__(self, unit_id, x, y, vx, vy, radius)
+        WaterCarrier.__init__(self, extra)
+
+class Vehicule(Unit):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+        Unit.__init__(self, unit_id, x, y, vx, vy, radius)
         self.mass = mass
 
-class Reaper(Unit):
-    def __init__(self, unit_id, x, y, vx, vy, radius, mass, player_id, score):
-        Unit.__init__(self, unit_id, x, y, vx, vy, radius, mass)
-        self.player_id = player_id
-        self.score = score
+class Looter(Vehicule):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+        Vehicule.__init__(self, unit_id, x, y, vx, vy, radius, mass)
 
-class Wreck(Unit):
-    def __init__(self, unit_id, x, y, vx, vy, radius, mass, extra):
-        Unit.__init__(self, unit_id, x, y, vx, vy, radius, mass)
-        self.extra = extra
+class Tanker(Vehicule, WaterCarrier):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass, extra, extra_2):
+        Vehicule.__init__(self, unit_id, x, y, vx, vy, radius, mass)
+        WaterCarrier.__init__(self, extra)
+        self.water_capacity = extra_2
+
+class Reaper(Looter):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+        Looter.__init__(self, unit_id, x, y, vx, vy, radius, mass)
+
+class Destroyer(Looter):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+        Looter.__init__(self, unit_id, x, y, vx, vy, radius, mass)
+
+class Doof(Looter):
+    def __init__(self, unit_id, x, y, vx, vy, radius, mass):
+        Looter.__init__(self, unit_id, x, y, vx, vy, radius, mass)
+
 
 def distance(x1, y1, x2, y2):
     return math.sqrt((x1-x2)**2 + (y1-y2)**2)
@@ -32,13 +57,17 @@ def heuristic(reapers, wreck):
     d2 = distance(reapers[2].x, reapers[2].y, wreck.x, wreck.y)
     return (-1)*d1*d2
 
-NB_REAPERS = 3
+NB_PLAYERS = 3
 
 # game loop
 while True:
-    scores = [int(input()) for _ in range(NB_REAPERS)]
-    rages = [int(input()) for _ in range(NB_REAPERS)]
-    reapers = [None for _ in range(NB_REAPERS)]
+    scores = [int(input()) for _ in range(NB_PLAYERS)]
+    rages = [int(input()) for _ in range(NB_PLAYERS)]
+
+    reapers = [None for _ in range(NB_PLAYERS)]
+    doofs = [None for _ in range(NB_PLAYERS)]
+    destroyers = [None for _ in range(NB_PLAYERS)]
+    tankers = []
     wrecks = []
 
     next_wreck_heuristic = float('+Inf')
@@ -60,9 +89,15 @@ while True:
         extra_2 = int(extra_2)
 
         if unit_type == 0:
-            reapers[player_id] = Reaper(unit_id, x, y, vx, vy, radius, mass, player_id, scores[player_id])
+            reapers[player_id] = Reaper(unit_id, x, y, vx, vy, radius, mass)
+        elif unit_type == 1:
+            destroyers[player_id] = Destroyer(unit_id, x, y, vx, vy, radius, mass)
+        elif unit_type == 2:
+            doofs[player_id] = Doof(unit_id, x, y, vx, vy, radius, mass)
+        elif unit_type == 3:
+            tankers.append(Tanker(unit_id, x, y, vx, vy, radius, mass, extra, extra_2))
         else:
-            wrecks.append(Wreck(unit_id, x, y, vx, vy, radius, mass, extra))
+            wrecks.append(Wreck(unit_id, x, y, vx, vy, radius, extra))
 
     for wreck in wrecks:
         wreck_heuristic = heuristic(reapers, wreck)
@@ -70,9 +105,6 @@ while True:
             next_wreck_heuristic = wreck_heuristic
             next_wreck = wreck
 
-    if next_wreck.x == reapers[0].x and next_wreck.y == reapers[0].y:
-        print("WAIT")
-    else:
-        print("%d %d %d" % (wreck.x, wreck.y, 300))
-    print("WAIT")
-    print("WAIT")
+    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
+    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
+    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
