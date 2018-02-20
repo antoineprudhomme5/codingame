@@ -46,11 +46,20 @@ class Doof(Looter):
     def __init__(self, unit_id, x, y, vx, vy, radius, mass):
         Looter.__init__(self, unit_id, x, y, vx, vy, radius, mass)
 
-
 def distance(x1, y1, x2, y2):
-    return math.sqrt((x1-x2)**2 + (y1-y2)**2)
+    return math.sqrt((x2-x1)**2 + (y2-y1)**2)
 
-def heuristic(reapers, wreck):
+def closer(origin, destinations):
+    response = None
+    response_distance = float('+Inf')
+    for destination in destinations:
+        dist = distance(origin.x, origin.y, destination.x, destination.y)
+        if dist < response_distance:
+            response = destination
+            response_distance = dist
+    return response, response_distance
+
+def calculate_wreck_heuristic(reapers, wreck):
     """ simple heuristic: distance
     """
     d1 = distance(reapers[1].x, reapers[1].y, wreck.x, wreck.y)
@@ -70,11 +79,7 @@ while True:
     tankers = []
     wrecks = []
 
-    next_wreck_heuristic = float('+Inf')
-    next_wreck = None
-
-    unit_count = int(input())
-    for _ in range(unit_count):
+    for _ in range(int(input())):
         unit_id, unit_type, player_id, mass, radius, x, y, vx, vy, extra, extra_2 = input().split()
         unit_id = int(unit_id)
         unit_type = int(unit_type)
@@ -99,12 +104,33 @@ while True:
         else:
             wrecks.append(Wreck(unit_id, x, y, vx, vy, radius, extra))
 
-    for wreck in wrecks:
-        wreck_heuristic = heuristic(reapers, wreck)
-        if wreck_heuristic < next_wreck_heuristic:
-            next_wreck_heuristic = wreck_heuristic
-            next_wreck = wreck
+    # DESTROYER
+    # if close enought, throw grenade to tanker
+    # else, chase the closest tanker to my reaper ?
+    DESTROYER = "WAIT"
+    closest_wreck, closest_wreck_dist = closer(reapers[0], wrecks)
+    closer_tanker, closer_tanker_dist = closer(destroyers[0], tankers)
+    if closer_tanker_dist < 2000 and rages[0] >= 60:
+        DESTROYER = "SKILL %d %d" % (closer_tanker.x+50, closer_tanker.y+50)
+    elif closest_wreck_dist < closer_tanker_dist:
+        DESTROYER = "%d %d %d" % (closest_wreck.x, closest_wreck.y, 300)
+    elif closer_tanker:
+        DESTROYER = "%d %d %d" % (closer_tanker.x, closer_tanker.y, 300)
 
-    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
-    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
-    print("%d %d %d" % (next_wreck.x, next_wreck.y, 300) if next_wreck else "WAIT")
+    # REAPER
+    # if there is a wreck, go
+    # else, follow the destroyer
+    REAPER = "WAIT"
+    closest_wreck, _ = closer(reapers[0], wrecks)
+    if closest_wreck:
+        REAPER = "%d %d %d" % (closest_wreck.x, closest_wreck.y, 300)
+    elif DESTROYER != "WAIT":
+        REAPER = "%d %d %d" % (closer_tanker.x, closer_tanker.y, 250)
+
+    # DOOF
+    # block best ennemy reaper
+    DOOF = "%d %d %d" % (reapers[0].x, reapers[1 if scores[1]>scores[2] else 2].y, 300)
+
+    print(REAPER)
+    print(DESTROYER)
+    print(DOOF)
